@@ -1,0 +1,12 @@
+{
+  "name": "RealPrice",
+  "displayName": "RealPrice",
+  "bundleId": "vn.realprice.app",
+  "version": "1.0.0",
+  "android": {
+    "package": "vn.realprice.app"
+  },
+  "ios": {
+    "bundleIdentifier": "vn.realprice.app"
+  }
+}

@@ -1,0 +1,132 @@
+# ============================================================
+# Node.js
+# ============================================================
+node_modules/
+dist/
+build/
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging
+.env.production
+*.env
+
+# ============================================================
+# Next.js
+# ============================================================
+.next/
+out/
+next-env.d.ts
+
+# ============================================================
+# React Native / Expo
+# ============================================================
+.expo/
+.expo-shared/
+ios/build/
+ios/Pods/
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+*.keystore
+!debug.keystore
+*.jks
+android/app/google-services.json
+ios/GoogleService-Info.plist
+
+# ============================================================
+# macOS
+# ============================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.AppleDouble
+.LSOverride
+Icon
+
+# ============================================================
+# IDE / Editors
+# ============================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ============================================================
+# Logs
+# ============================================================
+logs/
+*.log
+*.log.*
+
+# ============================================================
+# Coverage & Testing
+# ============================================================
+coverage/
+.nyc_output/
+*.lcov
+.jest-cache/
+
+# ============================================================
+# Build artifacts
+# ============================================================
+*.tsbuildinfo
+.cache/
+.parcel-cache/
+.turbo/
+
+# ============================================================
+# Secrets & Certificates
+# ============================================================
+*.pem
+*.key
+*.p12
+*.cert
+*.crt
+secrets/
+credentials/
+
+# ============================================================
+# Database
+# ============================================================
+*.sqlite
+*.sqlite3
+*.db
+
+# ============================================================
+# Docker
+# ============================================================
+# .dockerignore is a separate file per service
+docker-compose.override.yml
+
+# ============================================================
+# Misc
+# ============================================================
+*.pid
+*.seed
+*.pid.lock
+.yarn-integrity
+.eslintcache
+.stylelintcache
+*.tgz
