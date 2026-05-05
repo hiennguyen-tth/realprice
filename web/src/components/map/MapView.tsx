@@ -44,10 +44,10 @@ export function MapView({
   const [currentBbox, setCurrentBbox] = useState<BoundingBox | null>(null);
 
   // Derive bbox from map bounds
-  const getCurrentBbox = useCallback((): BoundingBox | null => {
-    const map = mapRef.current?.getMap();
-    if (!map) return null;
-    const bounds = map.getBounds();
+  const getCurrentBbox = useCallback((map?: any): BoundingBox | null => {
+    const mapInstance = map ?? mapRef.current?.getMap();
+    if (!mapInstance) return null;
+    const bounds = mapInstance.getBounds();
     if (!bounds) return null;
     return viewportToBbox({
       _sw: bounds.getSouthWest(),
@@ -73,11 +73,14 @@ export function MapView({
     [getCurrentBbox, onBboxChange, setViewport]
   );
 
-  const handleLoad = useCallback(() => {
+  const handleLoad = useCallback((evt: any) => {
     setIsMapLoaded(true);
-    const bbox = getCurrentBbox();
-    if (bbox) setCurrentBbox(bbox);
-  }, [getCurrentBbox, setIsMapLoaded]);
+    const bbox = getCurrentBbox(evt.target?.getMap?.());
+    if (bbox) {
+      setCurrentBbox(bbox);
+      onBboxChange?.(bbox);
+    }
+  }, [getCurrentBbox, onBboxChange, setIsMapLoaded]);
 
   const { markers } = useLandMarkers(currentBbox);
   const { heatmapAreas } = useHeatmap(currentBbox, mapMode === "heatmap");

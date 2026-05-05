@@ -58,11 +58,12 @@ export function formatPricePerM2(value: number): string {
 /**
  * Format area in m²: 85.5 → "85,5 m²"
  */
-export function formatArea(value: number): string {
-  if (!isFinite(value) || value <= 0) return "—";
-  const formatted = value % 1 === 0
-    ? value.toFixed(0)
-    : value.toFixed(1).replace(".", ",");
+export function formatArea(value: number | string): string {
+  const numeric = Number(value);
+  if (!isFinite(numeric) || numeric <= 0) return "—";
+  const formatted = numeric % 1 === 0
+    ? numeric.toFixed(0)
+    : numeric.toFixed(1).replace(".", ",");
   return `${formatted} m²`;
 }
 

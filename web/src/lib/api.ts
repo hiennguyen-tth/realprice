@@ -80,7 +80,29 @@ export async function getLandsByBbox(
   const { data } = await apiClient.get<ApiResponse<LandMarker[]>>("/lands", {
     params: { bbox: bboxParam(bbox) },
   });
-  return data.data;
+
+  return data.data.map((land) => {
+    const minPricePerM2 = Number((land as any).min_price_per_m2 ?? (land as any).minPricePerM2 ?? land.pricePerM2);
+    const totalListings = Number((land as any).total_listings ?? land.totalListings);
+
+    return {
+      id: land.id,
+      address: land.address,
+      district: land.district,
+      pricePerM2: Number.isFinite(minPricePerM2) ? minPricePerM2 : 0,
+      totalListings: Number.isFinite(totalListings) ? totalListings : 0,
+      location: {
+        longitude:
+          typeof (land as any).lng === "number"
+            ? (land as any).lng
+            : Number((land as any).lng) || 0,
+        latitude:
+          typeof (land as any).lat === "number"
+            ? (land as any).lat
+            : Number((land as any).lat) || 0,
+      },
+    };
+  });
 }
 
 export async function getLandById(id: string): Promise<Land> {
@@ -202,10 +224,21 @@ export async function searchListings(
   page = 1,
   limit = 20
 ): Promise<PaginatedResponse<Listing>> {
-  const { data } = await apiClient.get<PaginatedResponse<Listing>>("/search", {
+  const { data } = await apiClient.get<{
+    success: boolean;
+    query: string;
+    lands?: Land[];
+    listings: Listing[];
+    pagination: PaginatedResponse<Listing>["pagination"];
+  }>("/search", {
     params: { q: query, page, limit, ...filters },
   });
-  return data;
+
+  return {
+    success: data.success,
+    data: data.listings,
+    pagination: data.pagination,
+  };
 }
 
 export async function getMyListings(): Promise<Listing[]> {

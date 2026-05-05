@@ -13,11 +13,17 @@ interface PriceBubbleProps {
 
 export function PriceBubble({ marker, isSelected, onClick }: PriceBubbleProps) {
   const price = formatShortPrice(marker.pricePerM2);
+  const longitude = marker.location?.longitude;
+  const latitude = marker.location?.latitude;
+
+  if (longitude == null || latitude == null) {
+    return null;
+  }
 
   return (
     <Marker
-      longitude={marker.location.longitude}
-      latitude={marker.location.latitude}
+      longitude={longitude}
+      latitude={latitude}
       anchor="bottom"
       onClick={(e) => {
         e.originalEvent.stopPropagation();
