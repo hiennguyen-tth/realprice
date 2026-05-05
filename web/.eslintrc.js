@@ -1,6 +1,11 @@
 /** @type {import('eslint').Linter.Config} */
 module.exports = {
-  extends: ["next/core-web-vitals"],
+  parser: '@typescript-eslint/parser', // 👈 thêm
+  plugins: ['@typescript-eslint'],     // 👈 thêm
+  extends: [
+    'next/core-web-vitals',
+    'plugin:@typescript-eslint/recommended', // 👈 thêm luôn cho đủ
+  ],
   rules: {
     "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
     "@typescript-eslint/no-explicit-any": "warn",
