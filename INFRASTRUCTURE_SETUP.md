@@ -186,7 +186,8 @@ npx expo start
 # backend/.env
 CRAWLER_ENABLED=true
 CRAWLER_CRON=0 3 * * *           # Chạy lúc 03:00 mỗi ngày
-CRAWLER_LOCATIONS=Hải Châu,Đà Nẵng;Sơn Trà,Đà Nẵng;Ngũ Hành Sơn,Đà Nẵng
+# Tất cả quận/huyện có trong app (Đà Nẵng + TP.HCM + Hà Nội)
+CRAWLER_LOCATIONS=Hải Châu,Đà Nẵng;Sơn Trà,Đà Nẵng;Ngũ Hành Sơn,Đà Nẵng;Liên Chiểu,Đà Nẵng;Thanh Khê,Đà Nẵng;Cẩm Lệ,Đà Nẵng;Quận 1,Hồ Chí Minh;Quận 2,Hồ Chí Minh;Quận 7,Hồ Chí Minh;Bình Thạnh,Hồ Chí Minh;Thủ Đức,Hồ Chí Minh;Gò Vấp,Hồ Chí Minh;Hoàn Kiếm,Hà Nội;Đống Đa,Hà Nội;Cầu Giấy,Hà Nội;Long Biên,Hà Nội;Hà Đông,Hà Nội
 CRAWLER_MAX_PAGES=5              # Số trang mỗi nguồn
 CRAWLER_DELAY_MS=2000            # Delay giữa requests (ms)
 CRAWLER_NHATOT_ENABLED=true
@@ -199,16 +200,33 @@ cd backend
 npm install cheerio
 ```
 
-### 5.3 Trigger crawl thủ công
+### 5.3 Tạo tài khoản admin và trigger crawl thủ công
 ```bash
-curl -X POST http://localhost:3000/api/admin/crawler/trigger
+# Bước 1: Seed admin user (đổi số điện thoại trước khi chạy)
+psql $DATABASE_URL -f backend/db/seeds/002_admin_user.sql
+
+# Bước 2: Lấy OTP (xem trong server logs nếu OTP_DEV_BYPASS=true)
+curl -X POST https://your-api.com/api/auth/send-otp \
+     -H "Content-Type: application/json" \
+     -d '{"phone":"+84900000001"}'
+
+# Bước 3: Verify OTP → lấy accessToken
+curl -X POST https://your-api.com/api/auth/verify-otp \
+     -H "Content-Type: application/json" \
+     -d '{"phone":"+84900000001","code":"123456"}'
+
+# Bước 4: Trigger crawl (cần Bearer token từ bước 3)
+curl -X POST https://your-api.com/api/admin/crawler/trigger \
+     -H "Authorization: Bearer <accessToken>"
 # Response: {"success":true,"jobId":"..."}
 ```
 
 ### 5.4 Xem kết quả crawl
 ```bash
-curl http://localhost:3000/api/admin/crawler/stats
-curl http://localhost:3000/api/admin/crawler/listings?district=Hải+Châu
+curl https://your-api.com/api/admin/crawler/stats \
+     -H "Authorization: Bearer <accessToken>"
+curl "https://your-api.com/api/admin/crawler/listings?district=Hải+Châu" \
+     -H "Authorization: Bearer <accessToken>"
 ```
 
 ---
