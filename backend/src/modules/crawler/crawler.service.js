@@ -62,7 +62,7 @@ async function crawlNhatot({ district, province }) {
 
       const resp = await axios.get(src.baseUrl, {
         params,
-        headers: { 'User-Agent': config.userAgent },
+        headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Accept': 'application/json', 'Accept-Language': 'vi-VN,vi;q=0.9', 'Origin': 'https://www.chotot.com', 'Referer': 'https://www.chotot.com/' },
         timeout: 15_000,
       });
 

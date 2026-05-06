@@ -20,9 +20,9 @@
   "dependencies": {
     "aws-sdk": "^2.1500.0",
     "axios": "^1.6.0",
-    "cheerio": "^1.0.0",
     "bcrypt": "^5.1.0",
     "bullmq": "^5.1.0",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.5",
     "csv-parse": "^5.5.0",
     "date-fns": "^3.0.0",
@@ -58,8 +58,12 @@
     ]
   },
   "nodemonConfig": {
-    "watch": ["src"],
+    "watch": [
+      "src"
+    ],
     "ext": "js,json",
-    "ignore": ["src/**/*.test.js"]
+    "ignore": [
+      "src/**/*.test.js"
+    ]
   }
 }
