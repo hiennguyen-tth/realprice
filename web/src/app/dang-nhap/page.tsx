@@ -115,7 +115,7 @@ export default function LoginPage() {
             </div>
 
             <div className="flex justify-end">
-              <Link href="#" className="text-xs text-primary hover:underline">
+              <Link href="/lien-he?subject=quen-mat-khau" className="text-xs text-primary hover:underline">
                 Quên mật khẩu?
               </Link>
             </div>
@@ -149,9 +149,9 @@ export default function LoginPage() {
 
         <p className="text-center text-xs text-gray-400 mt-4">
           Bằng cách đăng nhập, bạn đồng ý với{" "}
-          <Link href="#" className="text-primary hover:underline">Điều khoản</Link>
+          <Link href="/dieu-khoan" className="text-primary hover:underline">Điều khoản</Link>
           {" "}và{" "}
-          <Link href="#" className="text-primary hover:underline">Chính sách bảo mật</Link>
+          <Link href="/chinh-sach-bao-mat" className="text-primary hover:underline">Chính sách bảo mật</Link>
           {" "}của RealPrice.
         </p>
       </div>

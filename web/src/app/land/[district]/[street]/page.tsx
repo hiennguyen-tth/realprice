@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       decodeURIComponent(street)
     );
     const listingsData = await getListings(land.id, 1, 5);
-    return generateLandMetadata(land, listingsData.data);
+    return generateLandMetadata(land, listingsData?.data ?? []);
   } catch {
     return {
       title: `Giá đất ${decodeURIComponent(street)}, ${decodeURIComponent(district)}`,
@@ -39,18 +39,10 @@ export default async function LandDetailPage({ params }: Props) {
   const decodedDistrict = decodeURIComponent(district);
   const decodedStreet = decodeURIComponent(street);
 
-  // Parallel data fetching (SSR)
-  const [land, listingsData, priceHistory, bankSummary, nearbyLands] =
-    await Promise.allSettled([
-      getLandBySlug(decodedDistrict, decodedStreet),
-      getListings("placeholder", 1, 12), // will re-fetch with actual id
-      getPriceHistory("placeholder"),
-      getBankValuationsForLand("placeholder"),
-      getNearbyLands("placeholder"),
-    ]);
+  // Step 1: Fetch land by slug
+  const landResult = await getLandBySlug(decodedDistrict, decodedStreet).catch(() => null);
 
-  // Extract land data first
-  if (land.status === "rejected") {
+  if (!landResult) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-bold text-gray-900 mb-3">
@@ -66,9 +58,9 @@ export default async function LandDetailPage({ params }: Props) {
     );
   }
 
-  const landData = land.value;
+  const landData = landResult;
 
-  // Re-fetch with actual land ID
+  // Step 2: Parallel fetch with real land ID
   const [actualListings, actualHistory, actualBankSummary, actualNearby] =
     await Promise.allSettled([
       getListings(landData.id, 1, 12),

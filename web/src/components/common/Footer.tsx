@@ -23,22 +23,35 @@ export function Footer() {
             </p>
             <div className="flex items-center gap-3 mt-4">
               <a
-                href="#"
-                className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors"
-                aria-label="Facebook"
+                href="https://www.facebook.com/realprice.vn"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors"
+                aria-label="Facebook RealPrice"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
                 </svg>
               </a>
               <a
-                href="#"
-                className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors"
-                aria-label="YouTube"
+                href="https://www.youtube.com/@realprice-vn"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-red-600 transition-colors"
+                aria-label="YouTube RealPrice"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z" />
                   <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="black" />
+                </svg>
+              </a>
+              <a
+                href="mailto:support@realprice.vn"
+                className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary transition-colors"
+                aria-label="Email hỗ trợ RealPrice"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </a>
             </div>
@@ -59,7 +72,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="hover:text-white hover:text-primary transition-colors"
+                    className="hover:text-primary transition-colors"
                   >
                     {link.label}
                   </Link>

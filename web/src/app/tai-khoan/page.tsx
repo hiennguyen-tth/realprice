@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getMyListings, getSavedListings } from "@/lib/api";
 import { ListingCard } from "@/components/listing/ListingCard";
@@ -31,6 +31,8 @@ export default function AccountPage() {
     queryFn: getSavedListings,
     enabled: !!session,
   });
+
+  const [upgradeClicked, setUpgradeClicked] = useState(false);
 
   if (status === "loading" || status === "unauthenticated") {
     return (
@@ -91,9 +93,13 @@ export default function AccountPage() {
                 Đăng không giới hạn, cảnh báo giá, xem định giá ngân hàng đầy đủ.
               </p>
             </div>
-            <button className="shrink-0 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
-              Nâng cấp
-            </button>
+            <Link
+              href="/dang-ky?plan=pro"
+              onClick={() => setUpgradeClicked(true)}
+              className="shrink-0 bg-primary hover:bg-primary-dark active:scale-95 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            >
+              {upgradeClicked ? "Đang chuyển..." : "Nâng cấp"}
+            </Link>
           </div>
         )}
       </div>

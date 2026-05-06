@@ -97,22 +97,33 @@ export function usePostListing() {
         updateForm({ imageUrls });
       }
 
-      const payload: CreateListingPayload = {
-        title: formData.title,
-        description: formData.description,
-        price: formData.price,
-        area: formData.area,
-        listingType: formData.listingType,
-        address: formData.address,
-        location: formData.location ?? undefined,
-        contactName: formData.contactName,
+      const payload: CreateListingPayload & {
+        listingType: string;
+        contactName: string;
+        contactPhone: string;
+        district?: string;
+      } = {
+        title:        formData.title,
+        description:  formData.description,
+        price:        formData.price,
+        area:         formData.area,
+        listingType:  formData.listingType,
+        address:      formData.address,
+        location:     formData.location ?? undefined,
+        contactName:  formData.contactName,
         contactPhone: formData.contactPhone,
+        district:     formData.district || undefined,
       };
 
-      return createListing(payload);
+      return createListing(payload as CreateListingPayload);
     },
     onSuccess: (listing) => {
-      router.push(`/land/${encodeURIComponent(listing.land?.district ?? "")}`);
+      const district = listing.land?.district ?? formData.district ?? "";
+      if (district) {
+        router.push(`/khu-vuc/${encodeURIComponent(district.toLowerCase().replace(/\s+/g, "-"))}`);
+      } else {
+        router.push("/tai-khoan");
+      }
     },
   });
 
