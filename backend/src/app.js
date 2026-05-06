@@ -32,6 +32,7 @@ const app = express();
 // Security & Parsing Middleware
 // ============================================================
 app.set('trust proxy', 1);
+app.set('etag', false); // Disable ETags — Redis handles server-side caching; ETags cause 304s with empty browser cache
 
 app.use(helmet({
   contentSecurityPolicy: false, // adjust per frontend needs
