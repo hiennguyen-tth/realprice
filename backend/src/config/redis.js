@@ -1,7 +1,7 @@
 'use strict';
 
 const { createClient } = require('redis');
-const config           = require('./index');
+const config = require('./index');
 
 let redisClient = null;
 
@@ -13,6 +13,8 @@ async function getRedisClient() {
   if (redisClient && redisClient.isOpen) {
     return redisClient;
   }
+
+  console.log('[Redis] Config:', config.redis);
 
   const clientOptions = {
     socket: {
@@ -26,16 +28,19 @@ async function getRedisClient() {
         return Math.min(retries * 100, 3000);
       },
     },
+    password: config.redis.password,
   };
-
-  if (config.redis.password) {
-    clientOptions.password = config.redis.password;
-  }
-  if (config.redis.db) {
-    clientOptions.database = config.redis.db;
-  }
+  // if (config.redis.db) {
+  //   clientOptions.database = config.redis.db;
+  // }
 
   redisClient = createClient(clientOptions);
+
+  // Set password if provided
+  if (config.redis.password) {
+    console.log('[Redis] Setting password after client creation:', typeof config.redis.password, config.redis.password);
+    // Try setting password after creation
+  }
 
   redisClient.on('error', (err) => {
     console.error('[Redis] Client error:', err.message);

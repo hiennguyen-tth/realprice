@@ -1,6 +1,6 @@
 'use strict';
 
-const Joi              = require('joi');
+const Joi = require('joi');
 const { validate, schemas } = require('../../middleware/validate');
 
 /**
@@ -13,10 +13,12 @@ class AuthController {
     this.authService = authService;
 
     // Bind all methods so they can be passed as Express route handlers
-    this.sendOtp    = this.sendOtp.bind(this);
-    this.verifyOtp  = this.verifyOtp.bind(this);
-    this.refresh    = this.refresh.bind(this);
-    this.logout     = this.logout.bind(this);
+    this.sendOtp = this.sendOtp.bind(this);
+    this.verifyOtp = this.verifyOtp.bind(this);
+    this.register = this.register.bind(this);
+    this.login = this.login.bind(this);
+    this.refresh = this.refresh.bind(this);
+    this.logout = this.logout.bind(this);
   }
 
   /**
@@ -25,10 +27,10 @@ class AuthController {
   async sendOtp(req, res, next) {
     try {
       const { phone } = req.body;
-      const result    = await this.authService.sendOtp(phone);
+      const result = await this.authService.sendOtp(phone);
       return res.status(200).json({
-        success:   true,
-        message:   'OTP sent successfully',
+        success: true,
+        message: 'OTP sent successfully',
         expiresAt: result.expiresAt,
       });
     } catch (err) {
@@ -42,12 +44,48 @@ class AuthController {
   async verifyOtp(req, res, next) {
     try {
       const { phone, code } = req.body;
-      const result          = await this.authService.verifyOtp(phone, code);
+      const result = await this.authService.verifyOtp(phone, code);
       return res.status(200).json({
-        success:      true,
-        accessToken:  result.accessToken,
+        success: true,
+        accessToken: result.accessToken,
         refreshToken: result.refreshToken,
-        user:         result.user,
+        user: result.user,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/auth/register
+   */
+  async register(req, res, next) {
+    try {
+      const { name, email, password } = req.body;
+      const result = await this.authService.register(name, email, password);
+      return res.status(201).json({
+        success: true,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        user: result.user,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * POST /api/auth/login
+   */
+  async login(req, res, next) {
+    try {
+      const { email, password } = req.body;
+      const result = await this.authService.login(email, password);
+      return res.status(200).json({
+        success: true,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        user: result.user,
       });
     } catch (err) {
       next(err);
@@ -60,9 +98,9 @@ class AuthController {
   async refresh(req, res, next) {
     try {
       const { refreshToken } = req.body;
-      const result           = await this.authService.refreshAccessToken(refreshToken);
+      const result = await this.authService.refreshAccessToken(refreshToken);
       return res.status(200).json({
-        success:     true,
+        success: true,
         accessToken: result.accessToken,
       });
     } catch (err) {
@@ -90,11 +128,22 @@ const sendOtpSchema = Joi.object({
 
 const verifyOtpSchema = Joi.object({
   phone: schemas.phone.required(),
-  code:  Joi.string().length(6).pattern(/^\d+$/).required(),
+  code: Joi.string().length(6).pattern(/^\d+$/).required(),
+});
+
+const registerSchema = Joi.object({
+  name: Joi.string().min(2).max(200).required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).max(100).required(),
+});
+
+const loginSchema = Joi.object({
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).max(100).required(),
 });
 
 const refreshSchema = Joi.object({
   refreshToken: Joi.string().required(),
 });
 
-module.exports = { AuthController, sendOtpSchema, verifyOtpSchema, refreshSchema };
+module.exports = { AuthController, sendOtpSchema, verifyOtpSchema, registerSchema, loginSchema, refreshSchema };
