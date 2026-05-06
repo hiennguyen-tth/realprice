@@ -101,7 +101,7 @@ export function LandSidepanel({ landId, onClose }: LandSidepanelProps) {
           </h3>
           {land && (
             <Link
-              href={`/land/${encodeURIComponent(land.district)}/${encodeURIComponent(land.street)}`}
+              href={`/listings?landId=${land.id}`}
               className="text-xs text-primary hover:underline"
             >
               Xem tất cả
@@ -124,7 +124,7 @@ export function LandSidepanel({ landId, onClose }: LandSidepanelProps) {
       {land && (
         <div className="p-4 border-t border-border">
           <Link
-            href={`/land/${encodeURIComponent(land.district)}/${encodeURIComponent(land.street)}`}
+            href={`/listings?landId=${land.id}`}
             className="block w-full text-center bg-primary hover:bg-primary-dark text-white py-2.5 rounded-xl text-sm font-semibold transition-colors"
           >
             Xem chi tiết khu vực
