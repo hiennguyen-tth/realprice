@@ -39,6 +39,7 @@ const router = Router();
 router.get('/',              optionalAuthenticate,                          listingCtrl.getListings);
 router.post('/',             authenticate, validate(createListingSchema),   listingCtrl.createListing);
 router.post('/upload-url',   authenticate, validate(uploadUrlSchema),       listingCtrl.getUploadUrl);
+router.get('/me',            authenticate,                                  listingCtrl.getMyListings);
 router.get('/:id',           optionalAuthenticate,                          listingCtrl.getListingById);
 router.put('/:id',           authenticate, validate(updateListingSchema),   listingCtrl.updateListing);
 router.delete('/:id',        authenticate,                                  listingCtrl.deleteListing);

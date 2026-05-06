@@ -13,6 +13,8 @@ class LandController {
     this.getPriceHistory   = this.getPriceHistory.bind(this);
     this.getNearby         = this.getNearby.bind(this);
     this.getBankValuations = this.getBankValuations.bind(this);
+    this.getDistrictOverview = this.getDistrictOverview.bind(this);
+    this.getLandBySlug       = this.getLandBySlug.bind(this);
   }
 
   /** GET /api/lands */
@@ -51,6 +53,21 @@ class LandController {
   async getBankValuations(req, res, next) {
     try {
       const data = await this.landService.getBankValuations(req.params.id);
+      res.json({ success: true, data });
+    } catch (err) { next(err); }
+  }
+
+  async getDistrictOverview(req, res, next) {
+    try {
+      const data = await this.landService.getDistrictOverview(req.params.district);
+      res.json({ success: true, data });
+    } catch (err) { next(err); }
+  }
+
+  async getLandBySlug(req, res, next) {
+    try {
+      const { district, street } = req.params;
+      const data = await this.landService.getLandBySlug(district, street);
       res.json({ success: true, data });
     } catch (err) { next(err); }
   }

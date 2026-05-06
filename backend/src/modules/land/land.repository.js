@@ -7,7 +7,7 @@ class LandRepository extends BaseRepository {
     super('lands', db);
   }
 
-  async getBbox({ minLng, minLat, maxLng, maxLat, listingType, minPrice, maxPrice, limit }) {
+  async getBbox({ minLng, minLat, maxLng, maxLat, _listingType, minPrice, maxPrice, limit }) {
     const { rows } = await this._query(
       `SELECT l.id,
               ST_Y(l.location::geometry) AS lat,
@@ -137,6 +137,76 @@ class LandRepository extends BaseRepository {
     );
     const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
     return { rows, total };
+  }
+
+  async getDistrictOverview(district) {
+    const pattern = `%${district.replace(/-/g, ' ').replace(/%/g, '')}%`;
+    const { rows } = await this._query(
+      `SELECT
+         l.district,
+         l.province,
+         COUNT(DISTINCT li.id)              AS total_listings,
+         ROUND(AVG(li.price_per_m2))::BIGINT AS avg_price_per_m2,
+         MIN(li.price_per_m2)               AS min_price_per_m2,
+         MAX(li.price_per_m2)               AS max_price_per_m2
+       FROM lands l
+       JOIN listings li ON li.land_id = l.id AND li.status = 'active'
+       WHERE l.district ILIKE $1
+       GROUP BY l.district, l.province
+       LIMIT 1`,
+      [pattern]
+    );
+    return rows[0] || null;
+  }
+
+  async getTopStreetsByDistrict(district, limit = 10) {
+    const pattern = `%${district.replace(/-/g, ' ').replace(/%/g, '')}%`;
+    const { rows } = await this._query(
+      `SELECT
+         l.address AS street,
+         ROUND(AVG(li.price_per_m2))::BIGINT AS avg_price_per_m2,
+         COUNT(li.id)                        AS total_listings
+       FROM lands l
+       JOIN listings li ON li.land_id = l.id AND li.status = 'active'
+       WHERE l.district ILIKE $1
+       GROUP BY l.address
+       ORDER BY avg_price_per_m2 DESC NULLS LAST
+       LIMIT $2`,
+      [pattern, limit]
+    );
+    return rows;
+  }
+
+  async getDistrictPriceChange(district, days = 30) {
+    const pattern = `%${district.replace(/-/g, ' ').replace(/%/g, '')}%`;
+    const { rows } = await this._query(
+      `SELECT
+         AVG(ph.price_per_m2) FILTER (WHERE ph.recorded_at >= NOW() - ($2 || ' days')::INTERVAL) AS recent_avg,
+         AVG(ph.price_per_m2) FILTER (WHERE ph.recorded_at < NOW() - ($2 || ' days')::INTERVAL
+           AND ph.recorded_at >= NOW() - ($3 || ' days')::INTERVAL) AS prev_avg
+       FROM price_history ph
+       JOIN lands l ON l.id = ph.land_id
+       WHERE l.district ILIKE $1`,
+      [pattern, days, days * 2]
+    );
+    return rows[0] || null;
+  }
+
+  async findByDistrictAndAddress(districtSlug, streetSlug) {
+    const districtPattern = `%${districtSlug.replace(/-/g, ' ').replace(/%/g, '').trim()}%`;
+    const streetPattern   = `%${streetSlug.replace(/-/g, ' ').replace(/%/g, '').trim()}%`;
+    const { rows } = await this._query(
+      `SELECT l.*,
+              ST_Y(l.location::geometry) AS lat_coord,
+              ST_X(l.location::geometry) AS lng_coord
+       FROM lands l
+       WHERE l.district ILIKE $1
+         AND (l.address ILIKE $2 OR l.ward ILIKE $2 OR l.slug ILIKE $2)
+       ORDER BY l.created_at DESC
+       LIMIT 1`,
+      [districtPattern, streetPattern]
+    );
+    return rows[0] || null;
   }
 }
 
