@@ -50,7 +50,9 @@ class LandService {
    * @returns {Promise<object>}
    */
   async getLandById(id) {
-    return this.landRepo.findByIdOrFail(id, 'Land');
+    const land = await this.landRepo.findByIdWithPrices(id);
+    if (!land) throw new NotFoundError('Land');
+    return land;
   }
 
   /**
