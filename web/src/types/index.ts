@@ -287,6 +287,8 @@ export interface ListingFilters {
   maxPrice?: number;
   minArea?: number;
   maxArea?: number;
+  district?: string;
+  ward?: string;
   sortBy?: "price_asc" | "price_desc" | "area_asc" | "newest";
 }
 

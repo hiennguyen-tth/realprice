@@ -8,13 +8,14 @@ class LandController {
   constructor(landService) {
     this.landService = landService;
 
-    this.getLands          = this.getLands.bind(this);
-    this.getLandById       = this.getLandById.bind(this);
-    this.getPriceHistory   = this.getPriceHistory.bind(this);
-    this.getNearby         = this.getNearby.bind(this);
+    this.getLands = this.getLands.bind(this);
+    this.getLandById = this.getLandById.bind(this);
+    this.getPriceHistory = this.getPriceHistory.bind(this);
+    this.getNearby = this.getNearby.bind(this);
     this.getBankValuations = this.getBankValuations.bind(this);
     this.getDistrictOverview = this.getDistrictOverview.bind(this);
-    this.getLandBySlug       = this.getLandBySlug.bind(this);
+    this.getDistrictSummaries = this.getDistrictSummaries.bind(this);
+    this.getLandBySlug = this.getLandBySlug.bind(this);
   }
 
   /** GET /api/lands */
@@ -29,6 +30,14 @@ class LandController {
   async getLandById(req, res, next) {
     try {
       const data = await this.landService.getLandById(req.params.id);
+      res.json({ success: true, data });
+    } catch (err) { next(err); }
+  }
+
+  /** GET /api/lands/districts */
+  async getDistrictSummaries(req, res, next) {
+    try {
+      const data = await this.landService.getDistrictSummaries();
       res.json({ success: true, data });
     } catch (err) { next(err); }
   }

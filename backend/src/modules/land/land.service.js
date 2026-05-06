@@ -1,8 +1,8 @@
 'use strict';
 
-const { NotFoundError }  = require('../../utils/errors');
+const { NotFoundError } = require('../../utils/errors');
 const { normalizeAddress, slugifyAddress } = require('../../utils/addressUtils');
-const { parseBbox }      = require('../../utils/geoUtils');
+const { parseBbox } = require('../../utils/geoUtils');
 const { parsePagination, buildPagination } = require('../../utils/formatUtils');
 
 /**
@@ -16,7 +16,7 @@ class LandService {
    */
   constructor(landRepository, bankValuationRepository) {
     this.landRepo = landRepository;
-    this.bvRepo   = bankValuationRepository;
+    this.bvRepo = bankValuationRepository;
   }
 
   /**
@@ -34,7 +34,7 @@ class LandService {
 
     const minPrice = query.minPrice ? parseInt(query.minPrice, 10) : null;
     const maxPrice = query.maxPrice ? parseInt(query.maxPrice, 10) : null;
-    const limit    = Math.min(parseInt(query.limit, 10) || 200, 500);
+    const limit = Math.min(parseInt(query.limit, 10) || 200, 500);
 
     return this.landRepo.getBbox({
       ...bbox,
@@ -118,20 +118,20 @@ class LandService {
     // Step 3: Create
     const slug = slugifyAddress(`${address || ''} ${data.district || ''}`);
     const land = await this.landRepo.create({
-      lat:               lat,
-      lng:               lng,
-      address:           address,
+      lat: lat,
+      lng: lng,
+      address: address,
       normalized_address: normAddr,
-      ward:              data.ward     || null,
-      district:          data.district || null,
-      province:          data.province || null,
-      area_m2:           data.area_m2  || null,
-      land_type:         data.land_type || 'residential',
-      legal_status:      data.legal_status || 'chua_co_giay_to',
-      frontage_m:        data.frontage_m   || null,
-      alley_width_m:     data.alley_width_m || null,
-      floors:            data.floors        || null,
-      slug:              slug,
+      ward: data.ward || null,
+      district: data.district || null,
+      province: data.province || null,
+      area_m2: data.area_m2 || null,
+      land_type: data.land_type || 'residential',
+      legal_status: data.legal_status || 'chua_co_giay_to',
+      frontage_m: data.frontage_m || null,
+      alley_width_m: data.alley_width_m || null,
+      floors: data.floors || null,
+      slug: slug,
     });
     return { land, created: true };
   }
@@ -154,12 +154,12 @@ class LandService {
     };
 
     return {
-      district:       overview.district,
-      city:           overview.province || 'TP.HCM',
-      avgPricePerM2:  Number(overview.avg_price_per_m2) || 0,
-      minPricePerM2:  Number(overview.min_price_per_m2) || 0,
-      maxPricePerM2:  Number(overview.max_price_per_m2) || 0,
-      totalListings:  Number(overview.total_listings)   || 0,
+      district: overview.district,
+      city: overview.province || 'TP.HCM',
+      avgPricePerM2: Number(overview.avg_price_per_m2) || 0,
+      minPricePerM2: Number(overview.min_price_per_m2) || 0,
+      maxPricePerM2: Number(overview.max_price_per_m2) || 0,
+      totalListings: Number(overview.total_listings) || 0,
       priceChange30d: calcChange(
         Number(change30?.recent_avg), Number(change30?.prev_avg)
       ),
@@ -167,11 +167,24 @@ class LandService {
         Number(change90?.recent_avg), Number(change90?.prev_avg)
       ),
       topStreets: topStreets.map(s => ({
-        street:         s.street,
-        avgPricePerM2:  Number(s.avg_price_per_m2) || 0,
-        totalListings:  Number(s.total_listings)   || 0,
+        street: s.street,
+        avgPricePerM2: Number(s.avg_price_per_m2) || 0,
+        totalListings: Number(s.total_listings) || 0,
       })),
     };
+  }
+
+  async getDistrictSummaries(limit = 30) {
+    const districts = await this.landRepo.getDistrictSummaries(limit);
+    return districts.map((d) => ({
+      district: d.district,
+      province: d.province || 'TP.HCM',
+      slug: slugifyAddress(d.district || ''),
+      avgPricePerM2: Number(d.avg_price_per_m2) || 0,
+      minPricePerM2: Number(d.min_price_per_m2) || 0,
+      maxPricePerM2: Number(d.max_price_per_m2) || 0,
+      totalListings: Number(d.total_listings) || 0,
+    }));
   }
 
   async getLandBySlug(districtSlug, streetSlug) {

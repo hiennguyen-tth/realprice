@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getDistrictSummaries } from "@/lib/api";
+import { formatPricePerM2 } from "@/lib/formatters";
 
 export const metadata: Metadata = {
   title: "Khu vực bất động sản — RealPrice",
   description: "Xem giá bất động sản theo khu vực, quận huyện tại TP.HCM, Hà Nội, Đà Nẵng. Heatmap giá, định giá ngân hàng.",
 };
 
-const CITIES = [
+const DEFAULT_CITIES = [
   {
     name: "TP. Hồ Chí Minh",
     districts: [
@@ -40,7 +42,58 @@ const CITIES = [
   },
 ];
 
-export default function KhuVucPage() {
+interface DistrictSummary {
+  district: string;
+  province: string;
+  slug: string;
+  avgPricePerM2: number;
+  minPricePerM2: number;
+  maxPricePerM2: number;
+  totalListings: number;
+  tag?: string;
+}
+
+interface CitySummary {
+  name: string;
+  districts: Array<{
+    name: string;
+    slug: string;
+    price: string;
+    totalListings?: number;
+    tag?: string;
+  }>;
+}
+
+export default async function KhuVucPage() {
+  let districts: DistrictSummary[] = [];
+
+  try {
+    districts = await getDistrictSummaries(30);
+  } catch {
+    districts = [];
+  }
+
+  const groupedByProvince = districts.length
+    ? districts.reduce((acc, item) => {
+      const province = item.province || "TP.HCM";
+      if (!acc[province]) acc[province] = [];
+      acc[province].push(item);
+      return acc;
+    }, {} as Record<string, DistrictSummary[]>)
+    : {};
+
+  const cities: CitySummary[] = districts.length
+    ? Object.entries(groupedByProvince).map(([province, list]) => ({
+      name: province,
+      districts: list.map((item) => ({
+        name: item.district,
+        slug: item.slug,
+        price: `${formatPricePerM2(item.minPricePerM2)}–${formatPricePerM2(item.maxPricePerM2)}`,
+        totalListings: item.totalListings,
+      })),
+    }))
+    : DEFAULT_CITIES;
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
       <div className="mb-8">
@@ -50,7 +103,6 @@ export default function KhuVucPage() {
         </p>
       </div>
 
-      {/* Quick search */}
       <div className="flex gap-3 mb-10">
         <Link
           href="/map"
@@ -70,9 +122,8 @@ export default function KhuVucPage() {
         </Link>
       </div>
 
-      {/* Cities */}
       <div className="space-y-10">
-        {CITIES.map((city) => (
+        {cities.map((city) => (
           <section key={city.name}>
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <span className="w-1 h-6 bg-primary rounded-full inline-block" />
@@ -95,6 +146,11 @@ export default function KhuVucPage() {
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">{city.name}</p>
                   <p className="text-sm font-bold text-primary mt-2">{d.price}</p>
+                  {d.totalListings != null && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      {d.totalListings.toLocaleString("vi-VN")} tin đăng
+                    </p>
+                  )}
                   <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
