@@ -29,6 +29,7 @@ export function LandSidepanel({ landId, onClose }: LandSidepanelProps) {
   });
 
   const listings = listingsData?.data ?? [];
+  const totalListings = land?.totalListings ?? listingsData?.pagination.total ?? listings.length;
 
   return (
     <div className="h-full flex flex-col bg-white animate-slide-in-right">
@@ -97,7 +98,7 @@ export function LandSidepanel({ landId, onClose }: LandSidepanelProps) {
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-900">
-            {listingsLoading ? "Đang tải..." : `${listings.length} tin đăng`}
+            {listingsLoading ? "Đang tải..." : `${totalListings} tin đăng`}
           </h3>
           {land && (
             <Link
@@ -111,13 +112,13 @@ export function LandSidepanel({ landId, onClose }: LandSidepanelProps) {
 
         {listingsLoading
           ? [1, 2, 3].map((i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-24 w-full" />
-              </div>
-            ))
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-24 w-full" />
+            </div>
+          ))
           : listings.map((listing) => (
-              <SidepanelListingCard key={listing.id} listing={listing} />
-            ))}
+            <SidepanelListingCard key={listing.id} listing={listing} />
+          ))}
       </div>
 
       {/* Footer CTA */}

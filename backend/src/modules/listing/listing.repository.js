@@ -20,8 +20,8 @@ class ListingRepository extends BaseRepository {
    */
   async findPaginated(filters = {}, limit = 20, offset = 0) {
     const conditions = [];
-    const params     = [];
-    let   idx        = 1;
+    const params = [];
+    let idx = 1;
 
     if (filters.landId) {
       conditions.push(`li.land_id = $${idx++}`);
@@ -35,29 +35,85 @@ class ListingRepository extends BaseRepository {
       conditions.push(`li.listing_type = $${idx++}`);
       params.push(filters.listingType);
     }
-    if (filters.minPrice != null) {
+    if (filters.minPrice !== null && filters.minPrice !== undefined) {
       conditions.push(`li.price >= $${idx++}`);
       params.push(filters.minPrice);
     }
-    if (filters.maxPrice != null) {
+    if (filters.maxPrice !== null && filters.maxPrice !== undefined) {
       conditions.push(`li.price <= $${idx++}`);
       params.push(filters.maxPrice);
     }
-    if (filters.sellerId) {
-      conditions.push(`li.seller_id = $${idx++}`);
-      params.push(filters.sellerId);
+    if (filters.minArea !== null && filters.minArea !== undefined) {
+      conditions.push(`li.area >= $${idx++}`);
+      params.push(filters.minArea);
+    }
+    if (filters.maxArea !== null && filters.maxArea !== undefined) {
+      conditions.push(`li.area <= $${idx++}`);
+      params.push(filters.maxArea);
+    }
+    if (filters.legalStatus) {
+      conditions.push(`li.legal_status = $${idx++}`);
+      params.push(filters.legalStatus);
+    }
+    if (filters.district) {
+      conditions.push(`l.district ILIKE $${idx++}`);
+      params.push(`%${filters.district.replace(/%/g, '').replace(/_/g, '')}%`);
+    }
+    if (filters.ward) {
+      conditions.push(`l.ward ILIKE $${idx++}`);
+      params.push(`%${filters.ward.replace(/%/g, '').replace(/_/g, '')}%`);
+    }
+    if (filters.query) {
+      const pattern = `%${filters.query.replace(/%/g, '').replace(/_/g, '')}%`;
+      conditions.push(`(
+        li.title ILIKE $${idx}
+        OR l.address ILIKE $${idx}
+        OR l.street ILIKE $${idx}
+        OR l.district ILIKE $${idx}
+        OR l.ward ILIKE $${idx}
+      )`);
+      params.push(pattern);
+      idx += 1;
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const countSql = `SELECT COUNT(*) AS total FROM listings li ${where}`;
-    const dataSql  = `
+    const countSql = `SELECT COUNT(*) AS total
+      FROM listings li
+      LEFT JOIN lands l ON l.id = li.land_id
+      ${where}`;
+
+    let orderBy = 'li.boosted DESC NULLS LAST, li.boost_expires_at DESC NULLS LAST, li.created_at DESC';
+    if (filters.sortBy) {
+      switch (filters.sortBy) {
+        case 'price_asc':
+          orderBy = 'li.price ASC';
+          break;
+        case 'price_desc':
+          orderBy = 'li.price DESC';
+          break;
+        case 'area_asc':
+          orderBy = 'li.area ASC';
+          break;
+        case 'area_desc':
+          orderBy = 'li.area DESC';
+          break;
+        case 'newest':
+          orderBy = 'li.created_at DESC';
+          break;
+        default:
+          orderBy = 'li.boosted DESC NULLS LAST, li.boost_expires_at DESC NULLS LAST, li.created_at DESC';
+      }
+    }
+
+    const dataSql = `
       SELECT li.*,
              ST_X(li.location::geometry) AS lng,
              ST_Y(li.location::geometry) AS lat
       FROM listings li
+      LEFT JOIN lands l ON l.id = li.land_id
       ${where}
-      ORDER BY li.boosted DESC NULLS LAST, li.boost_expires_at DESC NULLS LAST, li.created_at DESC
+      ORDER BY ${orderBy}
       LIMIT $${idx} OFFSET $${idx + 1}`;
 
     const [countResult, dataResult] = await Promise.all([
@@ -66,7 +122,7 @@ class ListingRepository extends BaseRepository {
     ]);
 
     return {
-      rows:  dataResult.rows,
+      rows: dataResult.rows,
       total: parseInt(countResult.rows[0].total, 10),
     };
   }

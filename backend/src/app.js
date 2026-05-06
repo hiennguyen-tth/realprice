@@ -2,26 +2,26 @@
 
 require('dotenv').config();
 
-const express      = require('express');
-const cors         = require('cors');
-const helmet       = require('helmet');
-const morgan       = require('morgan');
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
 
-const config         = require('./config');
-const errorHandler   = require('./middleware/errorHandler');
+const config = require('./config');
+const errorHandler = require('./middleware/errorHandler');
 const { defaultLimiter } = require('./middleware/rateLimit');
 
 // Module routers
-const authRouter          = require('./modules/auth');
-const landRouter          = require('./modules/land');
-const listingRouter       = require('./modules/listing');
-const userRouter          = require('./modules/user');
-const heatmapRouter       = require('./modules/heatmap');
-const comparisonRouter    = require('./modules/comparison');
+const authRouter = require('./modules/auth');
+const landRouter = require('./modules/land');
+const listingRouter = require('./modules/listing');
+const userRouter = require('./modules/user');
+const heatmapRouter = require('./modules/heatmap');
+const comparisonRouter = require('./modules/comparison');
 const bankValuationRouter = require('./modules/bankValuation');
-const paymentRouter       = require('./modules/payment');
-const adminRouter         = require('./modules/admin');
-const crawlerRouter       = require('./modules/crawler');
+const paymentRouter = require('./modules/payment');
+const adminRouter = require('./modules/admin');
+const crawlerRouter = require('./modules/crawler');
 
 // Search router (inline — uses land + listing repositories)
 const searchRouter = require('./search.routes');
@@ -46,7 +46,7 @@ app.use(cors({
       callback(new Error('CORS: origin not allowed'));
     }
   },
-  methods:     ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-Id'],
   credentials: true,
 }));
@@ -73,17 +73,18 @@ app.get('/health', (_req, res) => {
 // ============================================================
 const prefix = config.server.apiPrefix;
 
-app.use(`${prefix}/auth`,            authRouter);
-app.use(`${prefix}/lands`,           landRouter);
-app.use(`${prefix}/listings`,        listingRouter);
-app.use(`${prefix}/users/me`,        userRouter);
-app.use(`${prefix}/heatmap`,         heatmapRouter);
-app.use(`${prefix}/comparison`,      comparisonRouter);
+app.use(`${prefix}/auth`, authRouter);
+app.use(`${prefix}/lands`, landRouter);
+app.use(`${prefix}/listings`, listingRouter);
+app.use(`${prefix}/users/me`, userRouter);
+app.use(`${prefix}/heatmap`, heatmapRouter);
+app.use(`${prefix}/comparison`, comparisonRouter);
+app.use(`${prefix}/comparisons`, comparisonRouter);
 app.use(`${prefix}/bank-valuations`, bankValuationRouter);
-app.use(`${prefix}/payment`,         paymentRouter);
-app.use(`${prefix}/admin`,           adminRouter);
-app.use(`${prefix}/admin/crawler`,   crawlerRouter);
-app.use(`${prefix}/search`,          searchRouter);
+app.use(`${prefix}/payment`, paymentRouter);
+app.use(`${prefix}/admin`, adminRouter);
+app.use(`${prefix}/admin/crawler`, crawlerRouter);
+app.use(`${prefix}/search`, searchRouter);
 
 // ============================================================
 // 404 handler

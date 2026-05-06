@@ -26,7 +26,8 @@ import type {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+  process.env.NEXT_PUBLIC_API_URL
+  ?? (typeof window !== 'undefined' ? '/api/v1' : 'http://localhost:4000/api/v1');
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -76,35 +77,35 @@ function normalizeListing(row: any): Listing {
     return [];
   })();
 
-  const price    = Number(row.price    ?? 0);
-  const area     = Number(row.area     ?? 0);
-  const rawPpm   = row.price_per_m2 ?? row.pricePerM2;
+  const price = Number(row.price ?? 0);
+  const area = Number(row.area ?? 0);
+  const rawPpm = row.price_per_m2 ?? row.pricePerM2;
   const pricePerM2 = rawPpm != null
     ? Number(rawPpm)
     : area > 0 ? Math.round(price / area) : 0;
 
   return {
-    id:           row.id,
-    landId:       row.land_id       ?? row.landId       ?? "",
-    userId:       row.seller_id     ?? row.userId,
-    title:        row.title         ?? "",
-    description:  row.description,
+    id: row.id,
+    landId: row.land_id ?? row.landId ?? "",
+    userId: row.seller_id ?? row.userId,
+    title: row.title ?? "",
+    description: row.description,
     price,
     area,
     pricePerM2,
-    listingType:  (row.listing_type ?? row.listingType  ?? "sale") as Listing["listingType"],
-    status:       (row.status       ?? "active")                   as Listing["status"],
+    listingType: (row.listing_type ?? row.listingType ?? "sale") as Listing["listingType"],
+    status: (row.status ?? "active") as Listing["status"],
     images,
-    address:      row.address       ?? "",
-    location:     row.lat != null && row.lng != null
+    address: row.address ?? "",
+    location: row.lat != null && row.lng != null
       ? { latitude: Number(row.lat), longitude: Number(row.lng) }
       : row.location,
-    contactName:  row.contact_name  ?? row.contactName,
+    contactName: row.contact_name ?? row.contactName,
     contactPhone: row.contact_phone ?? row.contactPhone,
-    score:        row.score,
-    land:         row.land,
-    createdAt:    row.created_at    ?? row.createdAt    ?? "",
-    updatedAt:    row.updated_at    ?? row.updatedAt    ?? "",
+    score: row.score,
+    land: row.land,
+    createdAt: row.created_at ?? row.createdAt ?? "",
+    updatedAt: row.updated_at ?? row.updatedAt ?? "",
   };
 }
 
@@ -131,17 +132,17 @@ export async function getLandsByBbox(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const row = land as any;
     const minPricePerM2 = Number(row.min_price_per_m2 ?? row.minPricePerM2 ?? row.pricePerM2 ?? 0);
-    const totalListings = Number(row.total_listings   ?? row.totalListings  ?? 0);
+    const totalListings = Number(row.total_listings ?? row.totalListings ?? 0);
 
     return {
-      id:      row.id,
+      id: row.id,
       address: row.address,
       district: row.district,
-      pricePerM2:    Number.isFinite(minPricePerM2) ? minPricePerM2 : 0,
-      totalListings: Number.isFinite(totalListings)  ? totalListings  : 0,
+      pricePerM2: Number.isFinite(minPricePerM2) ? minPricePerM2 : 0,
+      totalListings: Number.isFinite(totalListings) ? totalListings : 0,
       location: {
         longitude: Number(row.lng ?? row.location?.longitude ?? 0),
-        latitude:  Number(row.lat ?? row.location?.latitude  ?? 0),
+        latitude: Number(row.lat ?? row.location?.latitude ?? 0),
       },
     };
   });
@@ -153,16 +154,16 @@ export async function getLandById(id: string): Promise<Land> {
   const d = data.data as any;
   return {
     ...d,
-    minPrice:     Number(d.min_price   ?? d.minPrice   ?? 0),
-    maxPrice:     Number(d.max_price   ?? d.maxPrice   ?? 0),
-    avgPrice:     Number(d.avg_price   ?? d.avgPrice   ?? 0),
-    pricePerM2:   Number(d.price_per_m2 ?? d.pricePerM2 ?? 0),
+    minPrice: Number(d.min_price ?? d.minPrice ?? 0),
+    maxPrice: Number(d.max_price ?? d.maxPrice ?? 0),
+    avgPrice: Number(d.avg_price ?? d.avgPrice ?? 0),
+    pricePerM2: Number(d.price_per_m2 ?? d.pricePerM2 ?? 0),
     totalListings: Number(d.total_listings ?? d.totalListings ?? 0),
     slugDistrict: d.slug_district ?? d.slugDistrict ?? "",
-    slugStreet:   d.slug_street   ?? d.slugStreet   ?? "",
+    slugStreet: d.slug_street ?? d.slugStreet ?? "",
     location: {
       longitude: Number(d.lng ?? d.location?.longitude ?? 0),
-      latitude:  Number(d.lat ?? d.location?.latitude  ?? 0),
+      latitude: Number(d.lat ?? d.location?.latitude ?? 0),
     },
   } as Land;
 }
@@ -180,7 +181,7 @@ export async function getLandBySlug(
     ...d,
     location: {
       longitude: Number(d.lng_coord ?? d.lng ?? d.location?.longitude ?? 0),
-      latitude:  Number(d.lat_coord ?? d.lat ?? d.location?.latitude  ?? 0),
+      latitude: Number(d.lat_coord ?? d.lat ?? d.location?.latitude ?? 0),
     },
   } as Land;
 }
@@ -264,15 +265,15 @@ export async function createListing(
   // Map camelCase → snake_case for the backend schema
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const body: Record<string, any> = {
-    title:         payload.title,
-    description:   payload.description,
-    price:         payload.price,
-    area:          payload.area,
-    address:       payload.address,
-    listing_type:  (payload as any).listingType ?? (payload as any).listing_type ?? "sale",
-    contact_name:  (payload as any).contactName  ?? (payload as any).contact_name,
+    title: payload.title,
+    description: payload.description,
+    price: payload.price,
+    area: payload.area,
+    address: payload.address,
+    listing_type: (payload as any).listingType ?? (payload as any).listing_type ?? "sale",
+    contact_name: (payload as any).contactName ?? (payload as any).contact_name,
     contact_phone: (payload as any).contactPhone ?? (payload as any).contact_phone,
-    images:        (payload as any).images ?? [],
+    images: (payload as any).images ?? [],
   };
 
   // Extract lat/lng from GeoPoint location
@@ -286,7 +287,7 @@ export async function createListing(
 
   // Optional land fields
   if ((payload as any).district) body.district = (payload as any).district;
-  if ((payload as any).ward)     body.ward     = (payload as any).ward;
+  if ((payload as any).ward) body.ward = (payload as any).ward;
 
   const { data } = await apiClient.post<ApiResponse<Listing>>("/listings", body);
   return normalizeListing(data.data);
