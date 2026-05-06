@@ -7,7 +7,7 @@ class LandRepository extends BaseRepository {
     super('lands', db);
   }
 
-  async getBbox({ minLng, minLat, maxLng, maxLat, _listingType, minPrice, maxPrice, limit }) {
+  async getBbox({ minLng, minLat, maxLng, maxLat, minPrice, maxPrice, limit }) {
     const { rows } = await this._query(
       `SELECT l.id,
               ST_Y(l.location::geometry) AS lat,
@@ -28,13 +28,12 @@ class LandRepository extends BaseRepository {
        LEFT JOIN listings li
          ON li.land_id = l.id
         AND li.status = 'active'
+        AND ($5::BIGINT IS NULL OR li.price >= $5)
+        AND ($6::BIGINT IS NULL OR li.price <= $6)
        WHERE ST_X(l.location::geometry) BETWEEN $1 AND $3
          AND ST_Y(l.location::geometry) BETWEEN $2 AND $4
-         AND ($5::BIGINT IS NULL OR li.price >= $5)
-         AND ($6::BIGINT IS NULL OR li.price <= $6)
        GROUP BY l.id
-       HAVING COUNT(li.id) > 0
-       ORDER BY has_boosted DESC, min_price ASC
+       ORDER BY has_boosted DESC, COUNT(li.id) DESC, min_price ASC
        LIMIT $7`,
       [minLng, minLat, maxLng, maxLat, minPrice || null, maxPrice || null, limit]
     );

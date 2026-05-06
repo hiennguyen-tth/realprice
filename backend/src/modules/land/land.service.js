@@ -32,14 +32,12 @@ class LandService {
       return [];
     }
 
-    const listingType = query.type  || 'sale';
-    const minPrice    = query.minPrice ? parseInt(query.minPrice, 10) : null;
-    const maxPrice    = query.maxPrice ? parseInt(query.maxPrice, 10) : null;
-    const limit       = Math.min(parseInt(query.limit, 10) || 200, 500);
+    const minPrice = query.minPrice ? parseInt(query.minPrice, 10) : null;
+    const maxPrice = query.maxPrice ? parseInt(query.maxPrice, 10) : null;
+    const limit    = Math.min(parseInt(query.limit, 10) || 200, 500);
 
     return this.landRepo.getBbox({
       ...bbox,
-      listingType,
       minPrice,
       maxPrice,
       limit,

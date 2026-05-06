@@ -44,6 +44,10 @@ function cacheMiddleware(ttl = TTL.default) {
 
     const key = buildCacheKey(req);
 
+    // Prevent browser from caching API responses — let Redis handle it
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+
     try {
       const cached = await redis.get(key);
       if (cached) {
