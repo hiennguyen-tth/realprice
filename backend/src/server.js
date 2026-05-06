@@ -1,15 +1,19 @@
 'use strict';
 
-require('dotenv').config();
+const result = require('dotenv').config();
+console.log('Dotenv result:', result);
 
-const http   = require('http');
-const app    = require('./app');
+console.log('After dotenv - DB_USER:', process.env.DB_USER);
+console.log('After dotenv - DB_PASSWORD:', process.env.DB_PASSWORD);
+
+const http = require('http');
+const app = require('./app');
 const config = require('./config');
-const { pool }           = require('./config/database');
+const { pool } = require('./config/database');
 const { getRedisClient, disconnectRedis } = require('./config/redis');
-const { queues }         = require('./jobs/queue');
+const { queues } = require('./jobs/queue');
 const { schedulePriceIndexJob } = require('./jobs/priceIndexJob');
-const { scheduleCrawlerJob }    = require('./jobs/crawlerJob');
+const { scheduleCrawlerJob } = require('./jobs/crawlerJob');
 
 // Import workers so they register and start listening
 require('./jobs/moderationJob');
@@ -90,7 +94,7 @@ async function shutdown(signal) {
 }
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT',  () => shutdown('SIGINT'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 process.on('unhandledRejection', (reason) => {
   console.error('[Server] Unhandled rejection:', reason);

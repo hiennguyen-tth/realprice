@@ -1,8 +1,8 @@
 'use strict';
 
-const bcrypt  = require('bcrypt');
-const jwt     = require('jsonwebtoken');
-const config  = require('../../config');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const config = require('../../config');
 const { UnauthorizedError, ValidationError } = require('../../utils/errors');
 
 /**
@@ -15,7 +15,7 @@ class AuthService {
    * @param {object} [smsProvider] - optional SMS adapter (defaults to console in dev)
    */
   constructor(userRepository, smsProvider = null) {
-    this.userRepo    = userRepository;
+    this.userRepo = userRepository;
     this.smsProvider = smsProvider;
   }
 
@@ -25,7 +25,7 @@ class AuthService {
    */
   _generateOtp() {
     const length = config.otp.length;
-    const max    = Math.pow(10, length);
+    const max = Math.pow(10, length);
     return String(Math.floor(Math.random() * max)).padStart(length, '0');
   }
 
@@ -37,7 +37,7 @@ class AuthService {
    * @returns {Promise<{ expiresAt: Date }>}
    */
   async sendOtp(phone) {
-    const otp       = this._generateOtp();
+    const otp = this._generateOtp();
     const expiresAt = new Date(Date.now() + config.otp.expiryMinutes * 60_000);
 
     // Hash the OTP before storing
@@ -50,7 +50,7 @@ class AuthService {
     }
 
     await this.userRepo.update(user.id, {
-      otp_code:       hashedOtp,
+      otp_code: hashedOtp,
       otp_expires_at: expiresAt,
     });
 
@@ -64,41 +64,75 @@ class AuthService {
   }
 
   /**
-   * Verify an OTP code and return JWT tokens.
+   * Register a new user with email/password.
    *
-   * @param {string} phone
-   * @param {string} code
+   * @param {string} name
+   * @param {string} email
+   * @param {string} password
    * @returns {Promise<{ accessToken: string, refreshToken: string, user: object }>}
    */
-  async verifyOtp(phone, code) {
-    const user = await this.userRepo.findByPhone(phone);
-    if (!user) {
-      throw new UnauthorizedError('Invalid phone number');
+  async register(name, email, password) {
+    // Check if user already exists
+    const existingUser = await this.userRepo.findByEmail(email);
+    if (existingUser) {
+      throw new ValidationError('Email already registered');
     }
 
-    if (!user.otp_code || !user.otp_expires_at) {
-      throw new UnauthorizedError('No OTP requested for this number');
-    }
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    if (new Date() > new Date(user.otp_expires_at)) {
-      throw new UnauthorizedError('OTP has expired');
-    }
+    // Create user
+    const user = await this.userRepo.create({
+      full_name: name,
+      email,
+      password: hashedPassword,
+      role: 'user',
+      is_active: true,
+    });
 
-    const match = await bcrypt.compare(code, user.otp_code);
-    if (!match) {
-      throw new UnauthorizedError('Invalid OTP code');
-    }
-
-    // Clear OTP
-    const accessToken  = this._issueAccessToken(user);
+    // Issue tokens
+    const accessToken = this._issueAccessToken(user);
     const refreshToken = this._issueRefreshToken(user);
 
     const hashedRefresh = await bcrypt.hash(refreshToken, 8);
-    await this.userRepo.update(user.id, {
-      otp_code:        null,
-      otp_expires_at:  null,
-      refresh_token:   hashedRefresh,
-    });
+    await this.userRepo.update(user.id, { refresh_token: hashedRefresh });
+
+    const safeUser = this._sanitizeUser(user);
+    return { accessToken, refreshToken, user: safeUser };
+  }
+
+  /**
+   * Login with email/password.
+   *
+   * @param {string} email
+   * @param {string} password
+   * @returns {Promise<{ accessToken: string, refreshToken: string, user: object }>}
+   */
+  async login(email, password) {
+    const user = await this.userRepo.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedError('Invalid email or password');
+    }
+
+    if (!user.password) {
+      throw new UnauthorizedError('Account requires password setup');
+    }
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      throw new UnauthorizedError('Invalid email or password');
+    }
+
+    if (!user.is_active) {
+      throw new UnauthorizedError('Account is disabled');
+    }
+
+    // Issue tokens
+    const accessToken = this._issueAccessToken(user);
+    const refreshToken = this._issueRefreshToken(user);
+
+    const hashedRefresh = await bcrypt.hash(refreshToken, 8);
+    await this.userRepo.update(user.id, { refresh_token: hashedRefresh });
 
     const safeUser = this._sanitizeUser(user);
     return { accessToken, refreshToken, user: safeUser };
