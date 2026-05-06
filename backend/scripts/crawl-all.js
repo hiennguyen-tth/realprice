@@ -57,16 +57,21 @@ async function insertListing(client, ad) {
     return 'nha_pho';
   })();
 
+  // Extract district from area_name (e.g. "Quận Tân Bình" → "Tân Bình")
+  const district = (ad.area_name || '').replace(/^(Quận|Huyện|Thị xã|Thành phố)\s+/i, '').trim();
+  const province = ad.region_name || '';
+  const address = [ad.subject_params?.address, ad.area_name, ad.region_name].filter(Boolean).join(', ') || ad.region_name || '';
+
   try {
     await client.query(`
-      INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, location, score)
+      INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, location, score, district, province)
       VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,
         ${lat && lng ? `ST_SetSRID(ST_MakePoint($9,$10),4326)` : 'NULL'},
-        50)
+        50,${lat && lng ? '$11,$12' : '$9,$10'})
       ON CONFLICT DO NOTHING
     `, lat && lng
-      ? [ad.subject, price, area, pricePerM2, listingType, ad.region_name || '', ad.account_name || '', ad.phone || '', lng, lat]
-      : [ad.subject, price, area, pricePerM2, listingType, ad.region_name || '', ad.account_name || '', ad.phone || '']
+      ? [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', lng, lat, district, province]
+      : [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', district, province]
     );
     return true;
   } catch (e) {
