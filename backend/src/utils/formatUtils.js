@@ -77,9 +77,9 @@ function formatDateTime(date) {
  */
 function buildPagination(total, page, limit) {
   return {
-    page:       parseInt(page, 10),
-    limit:      parseInt(limit, 10),
-    total:      parseInt(total, 10),
+    page: parseInt(page, 10),
+    limit: parseInt(limit, 10),
+    total: parseInt(total, 10),
     totalPages: Math.ceil(total / limit) || 1,
   };
 }
@@ -90,8 +90,14 @@ function buildPagination(total, page, limit) {
  * @returns {{ page: number, limit: number, offset: number }}
  */
 function parsePagination(query) {
-  const page  = Math.max(1, parseInt(query.page, 10)  || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(query.limit, 10) || 20));
+  const page = Math.max(1, parseInt(query.page, 10) || 1);
+  const limit = Math.min(
+    100,
+    Math.max(
+      1,
+      parseInt(query.limit, 10) || parseInt(query.pageSize, 10) || 20,
+    ),
+  );
   return { page, limit, offset: (page - 1) * limit };
 }
 

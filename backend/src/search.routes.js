@@ -1,14 +1,12 @@
 'use strict';
 
-const { Router }   = require('express');
+const { Router } = require('express');
 const { query: db } = require('./config/database');
 const { cacheMiddleware } = require('./middleware/cache');
 const { parsePagination, buildPagination } = require('./utils/formatUtils');
-const LandRepository    = require('./modules/land/land.repository');
-const ListingRepository = require('./modules/listing/listing.repository');
+const LandRepository = require('./modules/land/land.repository');
 
-const landRepo    = new LandRepository(db);
-const listingRepo = new ListingRepository(db);
+const landRepo = new LandRepository(db);
 
 const router = Router();
 
@@ -19,21 +17,22 @@ const router = Router();
  */
 router.get('/', cacheMiddleware(60), async (req, res, next) => {
   try {
-    const { q, type, minPrice, maxPrice } = req.query;
+    const { q, type, listingType, sortBy, minPrice, maxPrice, minArea, maxArea } = req.query;
     const { page, limit, offset } = parsePagination(req.query);
 
     if (!q || String(q).trim().length < 2) {
       return res.status(400).json({
         success: false,
-        code:    'VALIDATION_ERROR',
+        code: 'VALIDATION_ERROR',
         message: 'Query must be at least 2 characters',
       });
     }
 
     const results = { lands: [], listings: [], pagination: null };
+    const queryText = String(q).trim();
 
     if (!type || type === 'land') {
-      const { rows: lands, total } = await landRepo.search(q.trim(), limit, offset);
+      const { rows: lands, total } = await landRepo.search(queryText, limit, offset);
       results.lands = lands;
       if (type === 'land') {
         results.pagination = buildPagination(total, page, limit);
@@ -41,43 +40,97 @@ router.get('/', cacheMiddleware(60), async (req, res, next) => {
     }
 
     if (!type || type === 'listing') {
-      const filters = {
-        status: 'active',
-      };
-      if (minPrice) {filters.minPrice = parseInt(minPrice, 10);}
-      if (maxPrice) {filters.maxPrice = parseInt(maxPrice, 10);}
+      const pattern = `%${queryText.replace(/%/g, '').replace(/_/g, '')}%`;
+      const params = [pattern, pattern, pattern, pattern, pattern];
+      let idx = 6;
+      let whereClause = `li.status = 'active'
+             AND (
+               li.title ILIKE $1
+               OR l.address ILIKE $2
+               OR l.street ILIKE $3
+               OR l.district ILIKE $4
+               OR l.ward ILIKE $5
+             )`;
 
-      // For listings we search by title/address via a custom query
-      const pattern = `%${q.trim().replace(/%/g, '').replace(/_/g, '')}%`;
-      const { rows: listings, total } = await (async () => {
-        const countRes = await db(
-          `SELECT COUNT(*) AS total FROM listings li
-           JOIN lands l ON l.id = li.land_id
-           WHERE li.status = 'active'
-             AND (li.title ILIKE $1 OR l.address ILIKE $1 OR l.district ILIKE $1)
-             AND ($2::BIGINT IS NULL OR li.price >= $2)
-             AND ($3::BIGINT IS NULL OR li.price <= $3)`,
-          [pattern, filters.minPrice || null, filters.maxPrice || null]
-        );
-        const dataRes = await db(
-          `SELECT li.*, l.address, l.district, l.ward, l.lat, l.lng
-           FROM listings li
-           JOIN lands l ON l.id = li.land_id
-           WHERE li.status = 'active'
-             AND (li.title ILIKE $1 OR l.address ILIKE $1 OR l.district ILIKE $1)
-             AND ($2::BIGINT IS NULL OR li.price >= $2)
-             AND ($3::BIGINT IS NULL OR li.price <= $3)
-           ORDER BY li.boosted DESC, li.created_at DESC
-           LIMIT $4 OFFSET $5`,
-          [pattern, filters.minPrice || null, filters.maxPrice || null, limit, offset]
-        );
-        return {
-          rows:  dataRes.rows,
-          total: parseInt(countRes.rows[0].total, 10),
-        };
+      if (minPrice) {
+        whereClause += `\n             AND ($${idx}::BIGINT IS NULL OR li.price >= $${idx})`;
+        params.push(parseInt(minPrice, 10));
+        idx += 1;
+      } else {
+        params.push(null);
+        idx += 1;
+      }
+
+      if (maxPrice) {
+        whereClause += `\n             AND ($${idx}::BIGINT IS NULL OR li.price <= $${idx})`;
+        params.push(parseInt(maxPrice, 10));
+        idx += 1;
+      } else {
+        params.push(null);
+        idx += 1;
+      }
+
+      if (minArea) {
+        whereClause += `\n             AND ($${idx}::NUMERIC IS NULL OR li.area >= $${idx})`;
+        params.push(parseInt(minArea, 10));
+        idx += 1;
+      } else {
+        params.push(null);
+        idx += 1;
+      }
+
+      if (maxArea) {
+        whereClause += `\n             AND ($${idx}::NUMERIC IS NULL OR li.area <= $${idx})`;
+        params.push(parseInt(maxArea, 10));
+        idx += 1;
+      } else {
+        params.push(null);
+        idx += 1;
+      }
+
+      if (listingType) {
+        whereClause += `\n             AND li.listing_type = $${idx}`;
+        params.push(String(listingType));
+        idx += 1;
+      }
+
+      const sortClause = (() => {
+        switch (sortBy) {
+          case 'price_asc':
+            return 'li.price ASC';
+          case 'price_desc':
+            return 'li.price DESC';
+          case 'area_asc':
+            return 'li.area ASC';
+          case 'area_desc':
+            return 'li.area DESC';
+          case 'newest':
+            return 'li.created_at DESC';
+          default:
+            return 'li.boosted DESC NULLS LAST, li.boost_expires_at DESC NULLS LAST, li.created_at DESC';
+        }
       })();
 
-      results.listings   = listings;
+      const countRes = await db(
+        `SELECT COUNT(*) AS total
+         FROM listings li
+         JOIN lands l ON l.id = li.land_id
+         WHERE ${whereClause}`,
+        params,
+      );
+
+      const dataRes = await db(
+        `SELECT li.*, l.address, l.district, l.ward, l.street, l.lat, l.lng
+         FROM listings li
+         JOIN lands l ON l.id = li.land_id
+         WHERE ${whereClause}
+         ORDER BY ${sortClause}
+         LIMIT $${idx} OFFSET $${idx + 1}`,
+        [...params, limit, offset],
+      );
+
+      const total = parseInt(countRes.rows[0].total, 10);
+      results.listings = dataRes.rows;
       results.pagination = buildPagination(total, page, limit);
     }
 

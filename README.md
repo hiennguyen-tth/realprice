@@ -97,6 +97,9 @@ cp .env.local.example .env.local
 npm run dev           # http://localhost:3000
 ```
 
+> NOTE: In production, `NEXT_PUBLIC_API_URL` must point to the deployed backend API base URL, e.g. `https://api.realprice.vn/api/v1`.
+> If the web app and API share the same origin, the app can also use `/api/v1`.
+
 ### 4. Mobile App
 
 ```bash
@@ -166,7 +169,24 @@ npx expo start
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/search?q=&type=&minPrice=&maxPrice=&minArea=&maxArea=&page=` | Full-text + filter search |
+| `GET` | `/search?q=&type=&minPrice=&maxPrice=&minArea=&maxArea=&listingType=&sortBy=&page=` | Full-text + filter search across listings and lands |
+
+## Search page `/tim-kiem`
+
+- The page calls the backend `/api/v1/search` endpoint.
+- It requires `q` to be at least 2 characters.
+- Filters supported by the page are:
+  - `listingType` (property category)
+  - `minPrice`, `maxPrice`
+  - `minArea`, `maxArea`
+  - `sortBy`
+- The backend search now matches `title`, `address`, `street`, `district`, and `ward`.
+
+### Troubleshooting
+
+- If the page shows no results, verify `NEXT_PUBLIC_API_URL` is set correctly in production.
+- If the app is on the same host as the backend, `NEXT_PUBLIC_API_URL=/api/v1` is valid.
+- For debugging, open browser devtools Network tab and confirm `/search?q=...` returns `200` with `listings`.
 
 ### Comparison
 

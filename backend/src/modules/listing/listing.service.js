@@ -1,15 +1,15 @@
 'use strict';
 
-const AWS  = require('aws-sdk');
+const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
-const config  = require('../../config');
+const config = require('../../config');
 const { NotFoundError, ForbiddenError, ValidationError } = require('../../utils/errors');
 const { parsePagination, buildPagination } = require('../../utils/formatUtils');
 const { invalidateCache } = require('../../middleware/cache');
 
 const BOOST_DURATIONS = {
-  '3':  { days: 3,  price: config.boost.price3Days  },
-  '7':  { days: 7,  price: config.boost.price7Days  },
+  '3': { days: 3, price: config.boost.price3Days },
+  '7': { days: 7, price: config.boost.price7Days },
   '30': { days: 30, price: config.boost.price30Days },
 };
 
@@ -25,7 +25,7 @@ class ListingService {
   constructor(listingRepository, landService, jobQueue = null) {
     this.listingRepo = listingRepository;
     this.landService = landService;
-    this.jobQueue    = jobQueue;
+    this.jobQueue = jobQueue;
   }
 
   /**
@@ -37,18 +37,64 @@ class ListingService {
     const { page, limit, offset } = parsePagination(query);
 
     const filters = {};
-    if (query.landId)   {filters.landId      = query.landId;}
-    if (query.status)   {filters.status      = query.status;}
-    if (query.type)        {filters.listingType = query.type;}
-    if (query.listingType) {filters.listingType = query.listingType;}
-    if (query.minPrice) {filters.minPrice    = parseInt(query.minPrice, 10);}
-    if (query.maxPrice) {filters.maxPrice    = parseInt(query.maxPrice, 10);}
+    if (query.landId) {
+      filters.landId = query.landId;
+    }
+    if (query.status) {
+      filters.status = query.status;
+    } else {
+      filters.status = 'active';
+    }
+
+    const listingType = query.type || query.listingType;
+    if (listingType) {
+      filters.listingType = this._normalizeListingType(listingType);
+    }
+
+    if (query.minPrice) {
+      filters.minPrice = parseInt(query.minPrice, 10);
+    }
+    if (query.maxPrice) {
+      filters.maxPrice = parseInt(query.maxPrice, 10);
+    }
+    if (query.minArea) {
+      filters.minArea = parseInt(query.minArea, 10);
+    }
+    if (query.maxArea) {
+      filters.maxArea = parseInt(query.maxArea, 10);
+    }
+    if (query.legalStatus) {
+      filters.legalStatus = query.legalStatus;
+    }
+    if (query.district) {
+      filters.district = query.district;
+    }
+    if (query.ward) {
+      filters.ward = query.ward;
+    }
+    if (query.query || query.q) {
+      filters.query = String(query.query || query.q).trim();
+    }
+    if (query.sortBy) {
+      filters.sortBy = query.sortBy;
+    }
 
     const { rows, total } = await this.listingRepo.findPaginated(filters, limit, offset);
     return {
-      listings:   rows,
+      listings: rows,
       pagination: buildPagination(total, page, limit),
     };
+  }
+
+  _normalizeListingType(type) {
+    const normalized = String(type).trim().toLowerCase();
+    if (normalized === 'ban' || normalized === 'sale') {
+      return 'sale';
+    }
+    if (normalized === 'cho_thue' || normalized === 'cho-thue' || normalized === 'rent') {
+      return 'rent';
+    }
+    return null;
   }
 
   /**
@@ -62,7 +108,7 @@ class ListingService {
       throw new NotFoundError('Listing');
     }
     // Fire-and-forget view count increment
-    this.listingRepo.incrementViewCount(id).catch(() => {});
+    this.listingRepo.incrementViewCount(id).catch(() => { });
     return listing;
   }
 
@@ -77,38 +123,38 @@ class ListingService {
   async createListing(data, sellerId) {
     // Find or create the land parcel
     const { land } = await this.landService.findOrCreateLand({
-      lat:          data.lat,
-      lng:          data.lng,
-      address:      data.address,
-      ward:         data.ward,
-      district:     data.district,
-      province:     data.province,
-      area_m2:      data.area_m2,
-      land_type:    data.land_type,
+      lat: data.lat,
+      lng: data.lng,
+      address: data.address,
+      ward: data.ward,
+      district: data.district,
+      province: data.province,
+      area_m2: data.area_m2,
+      land_type: data.land_type,
       legal_status: data.legal_status,
-      frontage_m:   data.frontage_m,
+      frontage_m: data.frontage_m,
       alley_width_m: data.alley_width_m,
-      floors:        data.floors,
+      floors: data.floors,
     });
 
     const listing = await this.listingRepo.create({
-      land_id:       land.id,
-      seller_id:     sellerId,
-      price:         data.price,
-      area:          data.area || land.area_m2,
-      title:         data.title,
-      description:   data.description || null,
-      source:        data.source       || 'user',
-      status:        'pending_review',
-      listing_type:  data.listing_type || 'sale',
-      images:        JSON.stringify(data.images || []),
+      land_id: land.id,
+      seller_id: sellerId,
+      price: data.price,
+      area: data.area || land.area_m2,
+      title: data.title,
+      description: data.description || null,
+      source: data.source || 'user',
+      status: 'pending_review',
+      listing_type: data.listing_type || 'sale',
+      images: JSON.stringify(data.images || []),
       contact_phone: data.contact_phone || null,
-      contact_name:  data.contact_name  || null,
+      contact_name: data.contact_name || null,
     });
 
     // Enqueue moderation job
     if (this.jobQueue) {
-      await this.jobQueue.add('moderate-listing', { listingId: listing.id }).catch(() => {});
+      await this.jobQueue.add('moderate-listing', { listingId: listing.id }).catch(() => { });
     }
 
     // Invalidate land bbox cache
@@ -180,16 +226,16 @@ class ListingService {
     const key = `listings/${uuidv4()}.${ext}`;
 
     const s3 = new AWS.S3({
-      region:          config.aws.region,
-      accessKeyId:     config.aws.accessKeyId,
+      region: config.aws.region,
+      accessKeyId: config.aws.accessKeyId,
       secretAccessKey: config.aws.secretAccessKey,
     });
 
     const uploadUrl = await s3.getSignedUrlPromise('putObject', {
-      Bucket:      config.aws.s3Bucket,
-      Key:         key,
+      Bucket: config.aws.s3Bucket,
+      Key: key,
       ContentType: contentType,
-      Expires:     config.aws.presignedUrlExpiry,
+      Expires: config.aws.presignedUrlExpiry,
     });
 
     return {
@@ -218,7 +264,7 @@ class ListingService {
     }
 
     const expiresAt = new Date(Date.now() + option.days * 24 * 60 * 60 * 1000);
-    const updated   = await this.listingRepo.applyBoost(listingId, expiresAt);
+    const updated = await this.listingRepo.applyBoost(listingId, expiresAt);
 
     return { listing: updated, boostPrice: option.price };
   }
