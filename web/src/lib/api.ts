@@ -63,6 +63,52 @@ apiClient.interceptors.response.use(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helper: normalize snake_case listing row → camelCase Listing
+// ─────────────────────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeListing(row: any): Listing {
+  const images = (() => {
+    if (Array.isArray(row.images)) return row.images as string[];
+    if (typeof row.images === "string") {
+      try { return JSON.parse(row.images) as string[]; } catch { return []; }
+    }
+    return [];
+  })();
+
+  const price    = Number(row.price    ?? 0);
+  const area     = Number(row.area     ?? 0);
+  const rawPpm   = row.price_per_m2 ?? row.pricePerM2;
+  const pricePerM2 = rawPpm != null
+    ? Number(rawPpm)
+    : area > 0 ? Math.round(price / area) : 0;
+
+  return {
+    id:           row.id,
+    landId:       row.land_id       ?? row.landId       ?? "",
+    userId:       row.seller_id     ?? row.userId,
+    title:        row.title         ?? "",
+    description:  row.description,
+    price,
+    area,
+    pricePerM2,
+    listingType:  (row.listing_type ?? row.listingType  ?? "sale") as Listing["listingType"],
+    status:       (row.status       ?? "active")                   as Listing["status"],
+    images,
+    address:      row.address       ?? "",
+    location:     row.lat != null && row.lng != null
+      ? { latitude: Number(row.lat), longitude: Number(row.lng) }
+      : row.location,
+    contactName:  row.contact_name  ?? row.contactName,
+    contactPhone: row.contact_phone ?? row.contactPhone,
+    score:        row.score,
+    land:         row.land,
+    createdAt:    row.created_at    ?? row.createdAt    ?? "",
+    updatedAt:    row.updated_at    ?? row.updatedAt    ?? "",
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Helper: build bbox query string
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -82,24 +128,20 @@ export async function getLandsByBbox(
   });
 
   return data.data.map((land) => {
-    const minPricePerM2 = Number((land as any).min_price_per_m2 ?? (land as any).minPricePerM2 ?? land.pricePerM2);
-    const totalListings = Number((land as any).total_listings ?? land.totalListings);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const row = land as any;
+    const minPricePerM2 = Number(row.min_price_per_m2 ?? row.minPricePerM2 ?? row.pricePerM2 ?? 0);
+    const totalListings = Number(row.total_listings   ?? row.totalListings  ?? 0);
 
     return {
-      id: land.id,
-      address: land.address,
-      district: land.district,
-      pricePerM2: Number.isFinite(minPricePerM2) ? minPricePerM2 : 0,
-      totalListings: Number.isFinite(totalListings) ? totalListings : 0,
+      id:      row.id,
+      address: row.address,
+      district: row.district,
+      pricePerM2:    Number.isFinite(minPricePerM2) ? minPricePerM2 : 0,
+      totalListings: Number.isFinite(totalListings)  ? totalListings  : 0,
       location: {
-        longitude:
-          typeof (land as any).lng === "number"
-            ? (land as any).lng
-            : Number((land as any).lng) || 0,
-        latitude:
-          typeof (land as any).lat === "number"
-            ? (land as any).lat
-            : Number((land as any).lat) || 0,
+        longitude: Number(row.lng ?? row.location?.longitude ?? 0),
+        latitude:  Number(row.lat ?? row.location?.latitude  ?? 0),
       },
     };
   });
@@ -107,19 +149,20 @@ export async function getLandsByBbox(
 
 export async function getLandById(id: string): Promise<Land> {
   const { data } = await apiClient.get<ApiResponse<Land>>(`/lands/${id}`);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const d = data.data as any;
   return {
     ...d,
-    minPrice: Number(d.min_price ?? d.minPrice ?? 0),
-    maxPrice: Number(d.max_price ?? d.maxPrice ?? 0),
-    avgPrice: Number(d.avg_price ?? d.avgPrice ?? 0),
-    pricePerM2: Number(d.price_per_m2 ?? d.pricePerM2 ?? 0),
+    minPrice:     Number(d.min_price   ?? d.minPrice   ?? 0),
+    maxPrice:     Number(d.max_price   ?? d.maxPrice   ?? 0),
+    avgPrice:     Number(d.avg_price   ?? d.avgPrice   ?? 0),
+    pricePerM2:   Number(d.price_per_m2 ?? d.pricePerM2 ?? 0),
     totalListings: Number(d.total_listings ?? d.totalListings ?? 0),
     slugDistrict: d.slug_district ?? d.slugDistrict ?? "",
-    slugStreet: d.slug_street ?? d.slugStreet ?? "",
+    slugStreet:   d.slug_street   ?? d.slugStreet   ?? "",
     location: {
-      longitude: d.lng ?? d.location?.longitude ?? 0,
-      latitude: d.lat ?? d.location?.latitude ?? 0,
+      longitude: Number(d.lng ?? d.location?.longitude ?? 0),
+      latitude:  Number(d.lat ?? d.location?.latitude  ?? 0),
     },
   } as Land;
 }
@@ -131,7 +174,15 @@ export async function getLandBySlug(
   const { data } = await apiClient.get<ApiResponse<Land>>(
     `/lands/slug/${encodeURIComponent(district)}/${encodeURIComponent(street)}`
   );
-  return data.data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = data.data as any;
+  return {
+    ...d,
+    location: {
+      longitude: Number(d.lng_coord ?? d.lng ?? d.location?.longitude ?? 0),
+      latitude:  Number(d.lat_coord ?? d.lat ?? d.location?.latitude  ?? 0),
+    },
+  } as Land;
 }
 
 export async function getPriceHistory(landId: string): Promise<PriceHistory> {
@@ -180,30 +231,65 @@ export async function getListings(
   limit = 10,
   filters?: ListingFilters
 ): Promise<PaginatedResponse<Listing>> {
-  const { data } = await apiClient.get<PaginatedResponse<Listing>>(
-    "/listings",
-    {
-      params: { landId, page, limit, ...filters },
-    }
-  );
-  return data;
+  const { data } = await apiClient.get<{
+    success: boolean;
+    listings?: Listing[];
+    data?: Listing[];
+    pagination: PaginatedResponse<Listing>["pagination"];
+  }>("/listings", {
+    params: { landId: landId || undefined, page, limit, ...filters },
+  });
+
+  // Backend returns `listings` key, not `data`
+  const rows = data.listings ?? data.data ?? [];
+  return {
+    success: data.success,
+    data: rows.map(normalizeListing),
+    pagination: data.pagination ?? {
+      page, limit, total: rows.length, totalPages: 1, hasNext: false, hasPrev: false,
+    },
+  };
 }
 
 export async function getListingById(id: string): Promise<Listing> {
   const { data } = await apiClient.get<ApiResponse<Listing>>(
     `/listings/${id}`
   );
-  return data.data;
+  return normalizeListing(data.data);
 }
 
 export async function createListing(
   payload: CreateListingPayload
 ): Promise<Listing> {
-  const { data } = await apiClient.post<ApiResponse<Listing>>(
-    "/listings",
-    payload
-  );
-  return data.data;
+  // Map camelCase → snake_case for the backend schema
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const body: Record<string, any> = {
+    title:         payload.title,
+    description:   payload.description,
+    price:         payload.price,
+    area:          payload.area,
+    address:       payload.address,
+    listing_type:  (payload as any).listingType ?? (payload as any).listing_type ?? "sale",
+    contact_name:  (payload as any).contactName  ?? (payload as any).contact_name,
+    contact_phone: (payload as any).contactPhone ?? (payload as any).contact_phone,
+    images:        (payload as any).images ?? [],
+  };
+
+  // Extract lat/lng from GeoPoint location
+  if (payload.location) {
+    body.lat = payload.location.latitude;
+    body.lng = payload.location.longitude;
+  } else if ((payload as any).lat != null) {
+    body.lat = (payload as any).lat;
+    body.lng = (payload as any).lng;
+  }
+
+  // Optional land fields
+  if ((payload as any).district) body.district = (payload as any).district;
+  if ((payload as any).ward)     body.ward     = (payload as any).ward;
+
+  const { data } = await apiClient.post<ApiResponse<Listing>>("/listings", body);
+  return normalizeListing(data.data);
 }
 
 export async function updateListing(
@@ -214,7 +300,7 @@ export async function updateListing(
     `/listings/${id}`,
     payload
   );
-  return data.data;
+  return normalizeListing(data.data);
 }
 
 export async function deleteListing(id: string): Promise<void> {
@@ -226,7 +312,7 @@ export async function getPresignedUrl(
   contentType: string
 ): Promise<PresignedUrlResponse> {
   const { data } = await apiClient.post<ApiResponse<PresignedUrlResponse>>(
-    "/listings/presigned-url",
+    "/listings/upload-url",
     { fileName, contentType }
   );
   return data.data;
@@ -250,20 +336,21 @@ export async function searchListings(
 
   return {
     success: data.success,
-    data: data.listings,
-    pagination: data.pagination,
+    data: (data.listings ?? []).map(normalizeListing),
+    pagination: data.pagination ?? {
+      page, limit, total: 0, totalPages: 1, hasNext: false, hasPrev: false,
+    },
   };
 }
 
 export async function getMyListings(): Promise<Listing[]> {
   const { data } = await apiClient.get<ApiResponse<Listing[]>>("/listings/me");
-  return data.data;
+  return (data.data ?? []).map(normalizeListing);
 }
 
 export async function getSavedListings(): Promise<Listing[]> {
-  const { data } =
-    await apiClient.get<ApiResponse<Listing[]>>("/listings/saved");
-  return data.data;
+  // Saved listings feature not yet implemented in backend — return empty
+  return [];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -296,7 +383,7 @@ export async function getHeatmap(bbox: BoundingBox): Promise<HeatmapArea[]> {
     "/heatmap",
     { params: { bbox: bboxParam(bbox) } }
   );
-  return data.data;
+  return data.data ?? [];
 }
 
 export async function getDistrictHeatmap(
@@ -305,7 +392,7 @@ export async function getDistrictHeatmap(
   const { data } = await apiClient.get<ApiResponse<HeatmapArea[]>>(
     `/heatmap/district/${encodeURIComponent(district)}`
   );
-  return data.data;
+  return data.data ?? [];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -319,7 +406,7 @@ export async function getBankValuations(
     "/bank-valuations",
     { params: { district } }
   );
-  return data.data;
+  return data.data ?? [];
 }
 
 export async function getBankValuationById(
@@ -372,10 +459,14 @@ export async function updateMe(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Leads API
+// Leads API — POST /listings/:id/contact
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function createLead(payload: CreateLeadPayload): Promise<Lead> {
-  const { data } = await apiClient.post<ApiResponse<Lead>>("/leads", payload);
+  const { listingId, ...body } = payload;
+  const { data } = await apiClient.post<ApiResponse<Lead>>(
+    `/listings/${listingId}/contact`,
+    body
+  );
   return data.data;
 }

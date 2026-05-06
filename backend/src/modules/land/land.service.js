@@ -135,6 +135,56 @@ class LandService {
     });
     return { land, created: true };
   }
+
+  async getDistrictOverview(district) {
+    const [overview, topStreets, change30, change90] = await Promise.all([
+      this.landRepo.getDistrictOverview(district),
+      this.landRepo.getTopStreetsByDistrict(district, 10),
+      this.landRepo.getDistrictPriceChange(district, 30),
+      this.landRepo.getDistrictPriceChange(district, 90),
+    ]);
+
+    if (!overview) {
+      throw new NotFoundError('District');
+    }
+
+    const calcChange = (recent, prev) => {
+      if (!prev || prev == 0) return 0;
+      return Math.round(((recent - prev) / prev) * 1000) / 10;
+    };
+
+    return {
+      district:       overview.district,
+      city:           overview.province || 'TP.HCM',
+      avgPricePerM2:  Number(overview.avg_price_per_m2) || 0,
+      minPricePerM2:  Number(overview.min_price_per_m2) || 0,
+      maxPricePerM2:  Number(overview.max_price_per_m2) || 0,
+      totalListings:  Number(overview.total_listings)   || 0,
+      priceChange30d: calcChange(
+        Number(change30?.recent_avg), Number(change30?.prev_avg)
+      ),
+      priceChange90d: calcChange(
+        Number(change90?.recent_avg), Number(change90?.prev_avg)
+      ),
+      topStreets: topStreets.map(s => ({
+        street:         s.street,
+        avgPricePerM2:  Number(s.avg_price_per_m2) || 0,
+        totalListings:  Number(s.total_listings)   || 0,
+      })),
+    };
+  }
+
+  async getLandBySlug(districtSlug, streetSlug) {
+    const land = await this.landRepo.findByDistrictAndAddress(districtSlug, streetSlug);
+    if (!land) {
+      throw new NotFoundError('Land');
+    }
+    return {
+      ...land,
+      lat: land.lat_coord ?? land.lat,
+      lng: land.lng_coord ?? land.lng,
+    };
+  }
 }
 
 module.exports = LandService;

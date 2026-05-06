@@ -16,10 +16,12 @@ const landCtrl    = new LandController(landService);
 
 const router = Router();
 
-router.get('/',                    cacheMiddleware(TTL.lands),   landCtrl.getLands);
-router.get('/:id',                 cacheMiddleware(TTL.land),    landCtrl.getLandById);
-router.get('/:id/price-history',   cacheMiddleware(TTL.land),    landCtrl.getPriceHistory);
-router.get('/:id/nearby',          cacheMiddleware(TTL.land),    landCtrl.getNearby);
-router.get('/:id/bank-valuations', cacheMiddleware(TTL.land),    landCtrl.getBankValuations);
+router.get('/district/:district',        cacheMiddleware(TTL.lands),   landCtrl.getDistrictOverview);
+router.get('/slug/:district/:street',    cacheMiddleware(TTL.land),    landCtrl.getLandBySlug);
+router.get('/',                          cacheMiddleware(TTL.lands),   landCtrl.getLands);
+router.get('/:id',                       cacheMiddleware(TTL.land),    landCtrl.getLandById);
+router.get('/:id/price-history',         cacheMiddleware(TTL.land),    landCtrl.getPriceHistory);
+router.get('/:id/nearby',               cacheMiddleware(TTL.land),    landCtrl.getNearby);
+router.get('/:id/bank-valuations',       cacheMiddleware(TTL.land),    landCtrl.getBankValuations);
 
 module.exports = router;

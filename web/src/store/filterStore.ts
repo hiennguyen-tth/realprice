@@ -31,7 +31,12 @@ const DEFAULT_FILTERS: ListingFilters = {
 };
 
 export const useFilterStore = create<FilterState>((set, get) => ({
-  ...DEFAULT_FILTERS,
+  listingType: "",
+  minPrice: undefined,
+  maxPrice: undefined,
+  minArea: undefined,
+  maxArea: undefined,
+  sortBy: "newest",
 
   setListingType: (listingType) => set({ listingType }),
   setMinPrice: (minPrice) => set({ minPrice }),

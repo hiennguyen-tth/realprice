@@ -19,6 +19,7 @@ class ListingController {
     this.contactListing  = this.contactListing.bind(this);
     this.getUploadUrl    = this.getUploadUrl.bind(this);
     this.getSimilar      = this.getSimilar.bind(this);
+    this.getMyListings   = this.getMyListings.bind(this);
   }
 
   /** GET /api/listings */
@@ -90,6 +91,13 @@ class ListingController {
     try {
       const data = await this.listingService.getSimilarListings(req.params.id);
       res.json({ success: true, data });
+    } catch (err) { next(err); }
+  }
+
+  async getMyListings(req, res, next) {
+    try {
+      const result = await this.listingService.getMyListings(req.user.id);
+      res.json({ success: true, data: result });
     } catch (err) { next(err); }
   }
 }

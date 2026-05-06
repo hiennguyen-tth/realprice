@@ -39,7 +39,8 @@ class ListingService {
     const filters = {};
     if (query.landId)   {filters.landId      = query.landId;}
     if (query.status)   {filters.status      = query.status;}
-    if (query.type)     {filters.listingType = query.type;}
+    if (query.type)        {filters.listingType = query.type;}
+    if (query.listingType) {filters.listingType = query.listingType;}
     if (query.minPrice) {filters.minPrice    = parseInt(query.minPrice, 10);}
     if (query.maxPrice) {filters.maxPrice    = parseInt(query.maxPrice, 10);}
 
@@ -230,6 +231,11 @@ class ListingService {
   async getSimilarListings(listingId) {
     await this.listingRepo.findByIdOrFail(listingId, 'Listing');
     return this.listingRepo.findSimilar(listingId, 6);
+  }
+
+  async getMyListings(sellerId) {
+    const { rows } = await this.listingRepo.findPaginated({ sellerId }, 50, 0);
+    return rows;
   }
 }
 
