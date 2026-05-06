@@ -211,6 +211,29 @@ export async function getDistrictOverview(
   return data.data;
 }
 
+export async function getDistrictSummaries(
+  limit = 30
+): Promise<Array<{ district: string; province: string; slug: string; avgPricePerM2: number; minPricePerM2: number; maxPricePerM2: number; totalListings: number }>> {
+  const { data } = await apiClient.get<ApiResponse<Array<{
+    district: string;
+    province: string;
+    slug: string;
+    avg_price_per_m2: number;
+    min_price_per_m2: number;
+    max_price_per_m2: number;
+    total_listings: number;
+  }>>>(`/lands/districts`, { params: { limit } });
+  return (data.data ?? []).map((row) => ({
+    district: row.district,
+    province: row.province,
+    slug: row.slug,
+    avgPricePerM2: Number(row.avg_price_per_m2 ?? 0),
+    minPricePerM2: Number(row.min_price_per_m2 ?? 0),
+    maxPricePerM2: Number(row.max_price_per_m2 ?? 0),
+    totalListings: Number(row.total_listings ?? 0),
+  }));
+}
+
 export async function getNearbyLands(
   landId: string,
   radius = 1000

@@ -31,7 +31,7 @@ class LandRepository extends BaseRepository {
                   AND lb.boost_expires_at > NOW()
               ) AS has_boosted
        FROM lands l
-       JOIN listings li
+       LEFT JOIN listings li
          ON li.land_id = l.id
         AND li.status = 'active'
         AND ($5::BIGINT IS NULL OR li.price >= $5)
@@ -39,6 +39,7 @@ class LandRepository extends BaseRepository {
        WHERE ST_X(l.location::geometry) BETWEEN $1 AND $3
          AND ST_Y(l.location::geometry) BETWEEN $2 AND $4
        GROUP BY l.id
+       HAVING COUNT(li.id) > 0
        ORDER BY has_boosted DESC, COUNT(li.id) DESC, min_price ASC
        LIMIT $7`,
       [minLng, minLat, maxLng, maxLat, minPrice || null, maxPrice || null, limit]
@@ -169,6 +170,25 @@ class LandRepository extends BaseRepository {
     return { rows, total };
   }
 
+  async getDistrictSummaries(limit = 30) {
+    const { rows } = await this._query(
+      `SELECT
+         l.district,
+         l.province,
+         COUNT(li.id)::INTEGER AS total_listings,
+         ROUND(AVG(li.price_per_m2))::BIGINT AS avg_price_per_m2,
+         MIN(li.price_per_m2)::BIGINT AS min_price_per_m2,
+         MAX(li.price_per_m2)::BIGINT AS max_price_per_m2
+       FROM lands l
+       JOIN listings li ON li.land_id = l.id AND li.status = 'active'
+       GROUP BY l.district, l.province
+       ORDER BY total_listings DESC, avg_price_per_m2 DESC
+       LIMIT $1`,
+      [limit]
+    );
+    return rows;
+  }
+
   async getDistrictOverview(district) {
     const pattern = `%${district.replace(/-/g, ' ').replace(/%/g, '')}%`;
     const { rows } = await this._query(
@@ -224,7 +244,7 @@ class LandRepository extends BaseRepository {
 
   async findByDistrictAndAddress(districtSlug, streetSlug) {
     const districtPattern = `%${districtSlug.replace(/-/g, ' ').replace(/%/g, '').trim()}%`;
-    const streetPattern   = `%${streetSlug.replace(/-/g, ' ').replace(/%/g, '').trim()}%`;
+    const streetPattern = `%${streetSlug.replace(/-/g, ' ').replace(/%/g, '').trim()}%`;
     const { rows } = await this._query(
       `SELECT l.*,
               ST_Y(l.location::geometry) AS lat_coord,
