@@ -13,11 +13,17 @@ class LandRepository extends BaseRepository {
               ST_Y(l.location::geometry) AS lat,
               ST_X(l.location::geometry) AS lng,
               l.address, l.district, l.ward,
-              COUNT(li.id)           AS total_listings,
-              MIN(li.price)          AS min_price,
-              MAX(li.price)          AS max_price,
-              AVG(li.price)::BIGINT  AS avg_price,
-              MIN(li.price_per_m2)   AS min_price_per_m2,
+              COUNT(li.id)::INTEGER AS total_listings,
+              MIN(li.price)         AS min_price,
+              MAX(li.price)         AS max_price,
+              AVG(li.price)::BIGINT AS avg_price,
+              COALESCE(
+                MIN(li.price_per_m2),
+                CASE WHEN SUM(NULLIF(li.area, 0)) > 0
+                  THEN (SUM(li.price)::FLOAT / SUM(NULLIF(li.area, 0)))::BIGINT
+                  ELSE NULL
+                END
+              ) AS min_price_per_m2,
               EXISTS(
                 SELECT 1 FROM listings lb
                 WHERE lb.land_id = l.id
@@ -25,7 +31,7 @@ class LandRepository extends BaseRepository {
                   AND lb.boost_expires_at > NOW()
               ) AS has_boosted
        FROM lands l
-       LEFT JOIN listings li
+       JOIN listings li
          ON li.land_id = l.id
         AND li.status = 'active'
         AND ($5::BIGINT IS NULL OR li.price >= $5)
@@ -92,6 +98,31 @@ class LandRepository extends BaseRepository {
       [landId, radiusMetres, limit]
     );
     return rows;
+  }
+
+  async findByIdWithPrices(id) {
+    const { rows } = await this._query(
+      `SELECT l.*,
+              ST_Y(l.location::geometry) AS lat,
+              ST_X(l.location::geometry) AS lng,
+              COUNT(li.id)::INTEGER AS total_listings,
+              MIN(li.price)         AS min_price,
+              MAX(li.price)         AS max_price,
+              AVG(li.price)::BIGINT AS avg_price,
+              COALESCE(
+                MIN(li.price_per_m2),
+                CASE WHEN SUM(NULLIF(li.area, 0)) > 0
+                  THEN (SUM(li.price)::FLOAT / SUM(NULLIF(li.area, 0)))::BIGINT
+                  ELSE NULL
+                END
+              ) AS price_per_m2
+       FROM lands l
+       LEFT JOIN listings li ON li.land_id = l.id AND li.status = 'active'
+       WHERE l.id = $1
+       GROUP BY l.id`,
+      [id]
+    );
+    return rows[0] || null;
   }
 
   async findDuplicateCandidates() {
