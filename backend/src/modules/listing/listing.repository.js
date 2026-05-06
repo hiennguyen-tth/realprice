@@ -52,12 +52,12 @@ class ListingRepository extends BaseRepository {
 
     const countSql = `SELECT COUNT(*) AS total FROM listings li ${where}`;
     const dataSql  = `
-      SELECT li.*, l.address, l.district, l.ward, l.lat, l.lng,
-             l.land_type, l.legal_status, l.area_m2, l.frontage_m, l.alley_width_m
+      SELECT li.*,
+             ST_X(li.location::geometry) AS lng,
+             ST_Y(li.location::geometry) AS lat
       FROM listings li
-      JOIN lands l ON l.id = li.land_id
       ${where}
-      ORDER BY li.boosted DESC, li.boost_expires_at DESC NULLS LAST, li.created_at DESC
+      ORDER BY li.boosted DESC NULLS LAST, li.boost_expires_at DESC NULLS LAST, li.created_at DESC
       LIMIT $${idx} OFFSET $${idx + 1}`;
 
     const [countResult, dataResult] = await Promise.all([
@@ -78,11 +78,10 @@ class ListingRepository extends BaseRepository {
    */
   async findByIdWithLand(id) {
     const { rows } = await this._query(
-      `SELECT li.*, l.address, l.district, l.ward, l.lat, l.lng,
-              l.land_type, l.legal_status, l.area_m2, l.frontage_m, l.alley_width_m,
-              l.province, l.floors
+      `SELECT li.*,
+              ST_X(li.location::geometry) AS lng,
+              ST_Y(li.location::geometry) AS lat
        FROM listings li
-       JOIN lands l ON l.id = li.land_id
        WHERE li.id = $1`,
       [id]
     );
@@ -171,10 +170,10 @@ class ListingRepository extends BaseRepository {
     if (!ids || ids.length === 0) { return []; }
     const placeholders = ids.map((_, i) => `$${i + 1}`).join(', ');
     const { rows } = await this._query(
-      `SELECT li.*, l.address, l.district, l.ward, l.lat, l.lng,
-              l.land_type, l.legal_status, l.area_m2, l.frontage_m, l.alley_width_m
+      `SELECT li.*,
+              ST_X(li.location::geometry) AS lng,
+              ST_Y(li.location::geometry) AS lat
        FROM listings li
-       JOIN lands l ON l.id = li.land_id
        WHERE li.id IN (${placeholders})`,
       ids
     );
