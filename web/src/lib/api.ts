@@ -107,7 +107,21 @@ export async function getLandsByBbox(
 
 export async function getLandById(id: string): Promise<Land> {
   const { data } = await apiClient.get<ApiResponse<Land>>(`/lands/${id}`);
-  return data.data;
+  const d = data.data as any;
+  return {
+    ...d,
+    minPrice: Number(d.min_price ?? d.minPrice ?? 0),
+    maxPrice: Number(d.max_price ?? d.maxPrice ?? 0),
+    avgPrice: Number(d.avg_price ?? d.avgPrice ?? 0),
+    pricePerM2: Number(d.price_per_m2 ?? d.pricePerM2 ?? 0),
+    totalListings: Number(d.total_listings ?? d.totalListings ?? 0),
+    slugDistrict: d.slug_district ?? d.slugDistrict ?? "",
+    slugStreet: d.slug_street ?? d.slugStreet ?? "",
+    location: {
+      longitude: d.lng ?? d.location?.longitude ?? 0,
+      latitude: d.lat ?? d.location?.latitude ?? 0,
+    },
+  } as Land;
 }
 
 export async function getLandBySlug(
