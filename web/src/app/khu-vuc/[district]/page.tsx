@@ -30,9 +30,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+// Convert slug to Vietnamese district name
+function slugToDistrict(slug: string): string {
+  const map: Record<string, string> = {
+    "quan-1": "Quận 1", "quan-2": "Quận 2", "quan-3": "Quận 3",
+    "quan-4": "Quận 4", "quan-5": "Quận 5", "quan-6": "Quận 6",
+    "quan-7": "Quận 7", "quan-8": "Quận 8", "quan-9": "Quận 9",
+    "quan-10": "Quận 10", "quan-11": "Quận 11", "quan-12": "Quận 12",
+    "binh-thanh": "Bình Thạnh", "binh-tan": "Bình Tân",
+    "binh-chanh": "Bình Chánh", "binh-duong": "Bình Dương",
+    "go-vap": "Gò Vấp", "tan-binh": "Tân Bình", "tan-phu": "Tân Phú",
+    "phu-nhuan": "Phú Nhuận", "thu-duc": "Thủ Đức",
+    "nha-be": "Nhà Bè", "hoc-mon": "Hóc Môn", "cu-chi": "Củ Chi",
+    "can-gio": "Cần Giờ", "dong-da": "Đống Đa", "hoan-kiem": "Hoàn Kiếm",
+    "ba-dinh": "Ba Đình", "hai-ba-trung": "Hai Bà Trưng",
+    "tay-ho": "Tây Hồ", "long-bien": "Long Biên", "cau-giay": "Cầu Giấy",
+    "thanh-xuan": "Thanh Xuân", "hoang-mai": "Hoàng Mai",
+    "ha-dong": "Hà Đông", "son-tra": "Sơn Trà", "hai-chau": "Hải Châu",
+    "ngu-hanh-son": "Ngũ Hành Sơn", "lien-chieu": "Liên Chiểu",
+    "thanh-khe": "Thanh Khê", "cam-le": "Cẩm Lệ",
+  };
+  return map[slug] || decodeURIComponent(slug);
+}
+
 export default async function DistrictPage({ params }: Props) {
   const { district } = await params;
-  const decodedDistrict = decodeURIComponent(district);
+  const decodedDistrict = slugToDistrict(district);
 
   const [statsResult, listingsResult, bankValResult, heatmapResult] = await Promise.allSettled([
     getDistrictOverview(decodedDistrict),
