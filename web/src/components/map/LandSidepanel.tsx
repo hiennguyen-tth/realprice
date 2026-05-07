@@ -132,7 +132,7 @@ export function LandSidepanel({ landId, onClose }: LandSidepanelProps) {
           </Link>
         </div>
       )}
-    </a>
+    </div>
   );
 }
 
