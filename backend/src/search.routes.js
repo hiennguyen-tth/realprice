@@ -116,7 +116,7 @@ router.get('/', cacheMiddleware(60), async (req, res, next) => {
       );
 
       const dataRes = await db(
-        `SELECT li.*, l.address AS land_address, l.district AS land_district, l.ward AS land_ward, l.slug AS land_slug, l.lat, l.lng
+        `SELECT li.*, l.address AS land_address, l.district AS land_district, l.ward AS land_ward, l.slug AS land_slug, ST_Y(li.location::geometry) AS lat, ST_X(li.location::geometry) AS lng
          FROM listings li
          LEFT JOIN lands l ON l.id = li.land_id
          WHERE ${whereClause}
