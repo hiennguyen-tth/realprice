@@ -41,15 +41,16 @@ router.get('/', cacheMiddleware(60), async (req, res, next) => {
 
     if (!type || type === 'listing') {
       const pattern = `%${queryText.replace(/%/g, '').replace(/_/g, '')}%`;
-      const params = [pattern, pattern, pattern, pattern, pattern];
-      let idx = 6;
+      const params = [pattern, pattern, pattern, pattern, pattern, pattern];
+      let idx = 7;
       let whereClause = `li.status = 'active'
              AND (
                li.title ILIKE $1
-               OR l.address ILIKE $2
-               OR l.street ILIKE $3
-               OR l.district ILIKE $4
-               OR l.ward ILIKE $5
+               OR li.address ILIKE $2
+               OR li.district ILIKE $3
+               OR li.ward ILIKE $4
+               OR l.address ILIKE $5
+               OR l.street ILIKE $6
              )`;
 
       if (minPrice) {
@@ -114,15 +115,15 @@ router.get('/', cacheMiddleware(60), async (req, res, next) => {
       const countRes = await db(
         `SELECT COUNT(*) AS total
          FROM listings li
-         JOIN lands l ON l.id = li.land_id
+         LEFT JOIN lands l ON l.id = li.land_id
          WHERE ${whereClause}`,
         params,
       );
 
       const dataRes = await db(
-        `SELECT li.*, l.address, l.district, l.ward, l.street, l.lat, l.lng
+        `SELECT li.*, l.address AS land_address, l.district AS land_district, l.ward AS land_ward, l.street, l.lat, l.lng
          FROM listings li
-         JOIN lands l ON l.id = li.land_id
+         LEFT JOIN lands l ON l.id = li.land_id
          WHERE ${whereClause}
          ORDER BY ${sortClause}
          LIMIT $${idx} OFFSET $${idx + 1}`,

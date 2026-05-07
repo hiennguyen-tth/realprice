@@ -22,6 +22,7 @@ const bankValuationRouter = require('./modules/bankValuation');
 const paymentRouter = require('./modules/payment');
 const adminRouter = require('./modules/admin');
 const crawlerRouter = require('./modules/crawler');
+const chatRouter = require('./modules/chat');
 
 // Search router (inline — uses land + listing repositories)
 const searchRouter = require('./search.routes');
@@ -84,6 +85,7 @@ app.use(`${prefix}/bank-valuations`, bankValuationRouter);
 app.use(`${prefix}/payment`, paymentRouter);
 app.use(`${prefix}/admin`, adminRouter);
 app.use(`${prefix}/admin/crawler`, crawlerRouter);
+app.use(`${prefix}/chat`, chatRouter);
 app.use(`${prefix}/search`, searchRouter);
 
 // ============================================================

@@ -399,6 +399,32 @@ export async function getComparison(id: string): Promise<PriceComparison> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Chat API
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function chatWithAI(
+  message: string,
+  context?: Record<string, unknown>
+): Promise<{ response: string; action?: Record<string, unknown> }> {
+  const { data } = await apiClient.post<{
+    success: boolean;
+    data: { response: string; action?: Record<string, unknown> };
+  }>("/chat", {
+    message,
+    context: context || {},
+  });
+  return data.data;
+}
+
+export async function parseSearchFilters(message: string): Promise<Record<string, unknown>> {
+  const { data } = await apiClient.post<{
+    success: boolean;
+    data: Record<string, unknown>;
+  }>("/chat/search", { message });
+  return data.data;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Heatmap API
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -413,7 +439,7 @@ export async function getHeatmap(bbox: BoundingBox, zoom?: number): Promise<Heat
     boundary: d.boundary_geojson?.coordinates?.[0] ?? [],
     avgPrice: Number(d.avg_price ?? 0),
     pricePerM2: Number(d.avg_price_per_m2 ?? 0),
-    priceLevel: Number(d.heat_level ?? d.price_level ?? 3) as 1|2|3|4|5,
+    priceLevel: Number(d.heat_level ?? d.price_level ?? 3) as 1 | 2 | 3 | 4 | 5,
     updatedAt: d.updated_at ?? '',
   }));
 }

@@ -25,14 +25,16 @@ const LandSidepanel = dynamic(
 export default function MapPage() {
   const { selectedLandId, setSelectedLandId } = useMapStore();
   const [currentBbox, setCurrentBbox] = useState<BoundingBox | null>(null);
-  const { markers, isLoading } = useLandMarkers(currentBbox);
+  const [currentZoom, setCurrentZoom] = useState(12);
+  const { markers, isLoading } = useLandMarkers(currentBbox, currentZoom);
 
   const handleLandSelect = (marker: LandMarker) => {
     setSelectedLandId(marker.id);
   };
 
-  const handleBboxChange = (bbox: BoundingBox) => {
+  const handleBboxChange = (bbox: BoundingBox, zoom?: number) => {
     setCurrentBbox(bbox);
+    if (zoom) setCurrentZoom(zoom);
   };
 
   return (

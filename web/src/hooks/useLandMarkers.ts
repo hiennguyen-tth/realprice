@@ -10,7 +10,14 @@ import debounce from "lodash/debounce";
 const CACHE = new Map<string, LandMarker[]>();
 const DEBOUNCE_MS = 400;
 
-export function useLandMarkers(bbox: BoundingBox | null) {
+// zoom < 10 → tỉnh/thành, 10-12 → quận, > 12 → phường/đường
+export function getZoomLevel(zoom: number): "province" | "district" | "ward" {
+  if (zoom < 10) return "province";
+  if (zoom < 13) return "district";
+  return "ward";
+}
+
+export function useLandMarkers(bbox: BoundingBox | null, zoom: number = 12) {
   const [debouncedBbox, setDebouncedBbox] = useState<BoundingBox | null>(bbox);
 
   // Debounce bbox updates (triggered by map pan/zoom)
@@ -29,7 +36,8 @@ export function useLandMarkers(bbox: BoundingBox | null) {
     };
   }, [bbox, debouncedSetBbox]);
 
-  const cacheKey = debouncedBbox ? bboxToCacheKey(debouncedBbox) : null;
+  const zoomLevel = getZoomLevel(zoom);
+  const cacheKey = debouncedBbox ? `${bboxToCacheKey(debouncedBbox)}:${zoomLevel}` : null;
 
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ["landMarkers", cacheKey],
