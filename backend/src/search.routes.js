@@ -41,58 +41,53 @@ router.get('/', cacheMiddleware(60), async (req, res, next) => {
 
     if (!type || type === 'listing') {
       const pattern = `%${queryText.replace(/%/g, '').replace(/_/g, '')}%`;
-      const params = [pattern, pattern, pattern, pattern, pattern, pattern];
-      let idx = 7;
+      const searchFields = [
+        'li.title',
+        'li.address',
+        'li.district',
+        'li.ward',
+        'li.description',
+        'l.address',
+        'l.slug',
+      ];
+
+      const params = searchFields.map(() => pattern);
+      let idx = searchFields.length + 1;
       let whereClause = `li.status = 'active'
              AND (
-               li.title ILIKE $1
-               OR li.address ILIKE $2
-               OR li.district ILIKE $3
-               OR li.ward ILIKE $4
-               OR l.address ILIKE $5
-               OR l.street ILIKE $6
+               ${searchFields.map((field, index) => `${field} ILIKE $${index + 1}`).join('\n               OR ')}
              )`;
 
-      if (minPrice) {
-        whereClause += `\n             AND ($${idx}::BIGINT IS NULL OR li.price >= $${idx})`;
-        params.push(parseInt(minPrice, 10));
-        idx += 1;
-      } else {
-        params.push(null);
-        idx += 1;
-      }
+      const normalizedListingType = String(listingType || '').trim().toLowerCase();
+      const propertyCategoryKeywords = {
+        dat_nen: 'đất nền',
+        nha_pho: 'nhà phố',
+        chung_cu: 'chung cư',
+        biet_thu: 'biệt thự',
+        van_phong: 'văn phòng',
+      };
 
-      if (maxPrice) {
-        whereClause += `\n             AND ($${idx}::BIGINT IS NULL OR li.price <= $${idx})`;
-        params.push(parseInt(maxPrice, 10));
-        idx += 1;
-      } else {
-        params.push(null);
-        idx += 1;
-      }
+      if (normalizedListingType) {
+        if (['sale', 'ban', 'rent', 'cho_thue', 'cho-thue'].includes(normalizedListingType)) {
+          const normalizedType =
+            normalizedListingType === 'ban' ? 'sale'
+              : normalizedListingType === 'cho_thue' || normalizedListingType === 'cho-thue' ? 'rent'
+                : normalizedListingType;
 
-      if (minArea) {
-        whereClause += `\n             AND ($${idx}::NUMERIC IS NULL OR li.area >= $${idx})`;
-        params.push(parseInt(minArea, 10));
-        idx += 1;
-      } else {
-        params.push(null);
-        idx += 1;
-      }
-
-      if (maxArea) {
-        whereClause += `\n             AND ($${idx}::NUMERIC IS NULL OR li.area <= $${idx})`;
-        params.push(parseInt(maxArea, 10));
-        idx += 1;
-      } else {
-        params.push(null);
-        idx += 1;
-      }
-
-      if (listingType) {
-        whereClause += `\n             AND li.listing_type = $${idx}`;
-        params.push(String(listingType));
-        idx += 1;
+          whereClause += `\n             AND li.listing_type = $${idx}`;
+          params.push(normalizedType);
+          idx += 1;
+        } else if (propertyCategoryKeywords[normalizedListingType]) {
+          const categoryPattern = `%${propertyCategoryKeywords[normalizedListingType]}%`;
+          whereClause += `\n             AND (
+               li.title ILIKE $${idx}
+               OR li.description ILIKE $${idx}
+               OR li.address ILIKE $${idx}
+               OR l.address ILIKE $${idx}
+             )`;
+          params.push(categoryPattern);
+          idx += 1;
+        }
       }
 
       const sortClause = (() => {
@@ -121,7 +116,7 @@ router.get('/', cacheMiddleware(60), async (req, res, next) => {
       );
 
       const dataRes = await db(
-        `SELECT li.*, l.address AS land_address, l.district AS land_district, l.ward AS land_ward, l.street, l.lat, l.lng
+        `SELECT li.*, l.address AS land_address, l.district AS land_district, l.ward AS land_ward, l.slug AS land_slug, l.lat, l.lng
          FROM listings li
          LEFT JOIN lands l ON l.id = li.land_id
          WHERE ${whereClause}
