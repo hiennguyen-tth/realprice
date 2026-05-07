@@ -101,7 +101,7 @@ async function main() {
       try {
         console.log(`📄 Page ${page}/${MAX_PAGES}...`);
         const ads = await fetchPage(page);
-        
+
         if (ads.length === 0) {
           console.log('Hết data!');
           break;

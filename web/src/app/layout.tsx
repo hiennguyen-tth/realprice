@@ -22,6 +22,7 @@ export default async function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#FF5A1F" />
         <meta name="google-adsense-account" content={process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? ""} />
       </head>
