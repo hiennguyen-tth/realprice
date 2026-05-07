@@ -405,17 +405,12 @@ export async function getComparison(id: string): Promise<PriceComparison> {
 export async function getHeatmap(bbox: BoundingBox, zoom?: number): Promise<HeatmapArea[]> {
   const params: Record<string, string | number> = { bbox: bboxParam(bbox) };
   if (zoom != null) params.zoom = zoom;
-  const { data } = await apiClient.get<ApiResponse<any[]>>("/heatmap", { params });
-  return (data.data ?? []).map((d: any) => ({
-    id: d.id,
-    name: d.name || d.district || d.ward || '',
-    district: d.district || '',
-    boundary: d.boundary_geojson?.coordinates?.[0] ?? [],
-    avgPrice: Number(d.avg_price ?? 0),
-    pricePerM2: Number(d.avg_price_per_m2 ?? 0),
-    priceLevel: Number(d.heat_level ?? d.price_level ?? 3) as 1|2|3|4|5,
-    updatedAt: d.updated_at ?? '',
-  }));
+
+  const { data } = await apiClient.get<ApiResponse<HeatmapArea[]>>(
+    "/heatmap",
+    { params }
+  );
+  return data.data ?? [];
 }
 
 export async function getDistrictHeatmap(
