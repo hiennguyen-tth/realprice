@@ -84,6 +84,7 @@ export function MapView({
 
   const { markers } = useLandMarkers(currentBbox, viewport.zoom);
   const { heatmapAreas } = useHeatmap(currentBbox, viewport.zoom, mapMode === "heatmap");
+  const zoom = viewport.zoom;
 
   return (
     <div className={className}>
@@ -111,22 +112,38 @@ export function MapView({
 
         {/* Heatmap mode */}
         {mapMode === "heatmap" && (
-          <HeatmapLayer areas={heatmapAreas} />
+          <HeatmapLayer
+            areas={heatmapAreas}
+            onAreaClick={(area) => {
+              // Find matching land marker và select
+              const match = markers.find(m => m.district === area.district);
+              if (match) {
+                setSelectedLandId(match.id);
+                onLandSelect?.(match);
+              }
+            }}
+          />
         )}
 
-        {/* Marker mode */}
-        {mapMode === "markers" &&
-          markers.map((marker) => (
+        {/* Marker mode — limit markers theo zoom để tránh quá tải */}
+        {mapMode === "markers" && (() => {
+          const maxMarkers = zoom < 10 ? 20 : zoom < 12 ? 50 : zoom < 14 ? 100 : 200;
+          const visibleMarkers = markers
+            .sort((a, b) => b.totalListings - a.totalListings)
+            .slice(0, maxMarkers);
+          return visibleMarkers.map((marker) => (
             <PriceBubble
               key={marker.id}
               marker={marker}
               isSelected={selectedLandId === marker.id}
+              zoom={zoom}
               onClick={() => {
                 setSelectedLandId(marker.id);
                 onLandSelect?.(marker);
               }}
             />
-          ))}
+          ));
+        })()}
       </Map>
     </div>
   );
