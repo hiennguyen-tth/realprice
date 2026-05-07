@@ -402,10 +402,13 @@ export async function getComparison(id: string): Promise<PriceComparison> {
 // Heatmap API
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function getHeatmap(bbox: BoundingBox): Promise<HeatmapArea[]> {
+export async function getHeatmap(bbox: BoundingBox, zoom?: number): Promise<HeatmapArea[]> {
+  const params: Record<string, string | number> = { bbox: bboxParam(bbox) };
+  if (zoom != null) params.zoom = zoom;
+
   const { data } = await apiClient.get<ApiResponse<HeatmapArea[]>>(
     "/heatmap",
-    { params: { bbox: bboxParam(bbox) } }
+    { params }
   );
   return data.data ?? [];
 }

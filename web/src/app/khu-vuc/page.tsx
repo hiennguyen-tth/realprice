@@ -6,41 +6,13 @@ import { formatPricePerM2 } from "@/lib/formatters";
 export const metadata: Metadata = {
   title: "Khu vực bất động sản — RealPrice",
   description: "Xem giá bất động sản theo khu vực, quận huyện tại TP.HCM, Hà Nội, Đà Nẵng. Heatmap giá, định giá ngân hàng.",
+  keywords: "khu vực bất động sản, giá đất quận, heatmap giá, định giá ngân hàng, bds TP.HCM, bds Hà Nội, bds Đà Nẵng, sale bất động sản",
+  openGraph: {
+    title: "Khu vực bất động sản — RealPrice",
+    description: "Xem giá bất động sản theo quận huyện, heatmap khu vực, định giá ngân hàng và tin bán nhà đất.",
+    type: "website",
+  },
 };
-
-const DEFAULT_CITIES = [
-  {
-    name: "TP. Hồ Chí Minh",
-    districts: [
-      { name: "Quận 1", slug: "quan-1", price: "45–120 triệu/m²", tag: "hot" },
-      { name: "Quận 2", slug: "quan-2", price: "30–80 triệu/m²" },
-      { name: "Quận 7", slug: "quan-7", price: "25–60 triệu/m²" },
-      { name: "Bình Thạnh", slug: "binh-thanh", price: "20–50 triệu/m²" },
-      { name: "Thủ Đức", slug: "thu-duc", price: "18–45 triệu/m²" },
-      { name: "Gò Vấp", slug: "go-vap", price: "15–35 triệu/m²" },
-    ],
-  },
-  {
-    name: "Hà Nội",
-    districts: [
-      { name: "Hoàn Kiếm", slug: "hoan-kiem", price: "80–200 triệu/m²", tag: "hot" },
-      { name: "Đống Đa", slug: "dong-da", price: "40–120 triệu/m²" },
-      { name: "Cầu Giấy", slug: "cau-giay", price: "30–80 triệu/m²" },
-      { name: "Long Biên", slug: "long-bien", price: "20–50 triệu/m²" },
-      { name: "Hà Đông", slug: "ha-dong", price: "18–40 triệu/m²" },
-    ],
-  },
-  {
-    name: "Đà Nẵng",
-    districts: [
-      { name: "Hải Châu", slug: "hai-chau", price: "25–60 triệu/m²", tag: "hot" },
-      { name: "Sơn Trà", slug: "son-tra", price: "20–50 triệu/m²" },
-      { name: "Ngũ Hành Sơn", slug: "ngu-hanh-son", price: "15–40 triệu/m²" },
-      { name: "Liên Chiểu", slug: "lien-chieu", price: "10–25 triệu/m²" },
-      { name: "Thanh Khê", slug: "thanh-khe", price: "18–45 triệu/m²" },
-    ],
-  },
-];
 
 interface DistrictSummary {
   district: string;
@@ -66,33 +38,30 @@ interface CitySummary {
 
 export default async function KhuVucPage() {
   let districts: DistrictSummary[] = [];
+  let fetchError = false;
 
   try {
     districts = await getDistrictSummaries(30);
   } catch {
-    districts = [];
+    fetchError = true;
   }
 
-  const groupedByProvince = districts.length
-    ? districts.reduce((acc, item) => {
-      const province = item.province || "TP.HCM";
-      if (!acc[province]) acc[province] = [];
-      acc[province].push(item);
-      return acc;
-    }, {} as Record<string, DistrictSummary[]>)
-    : {};
+  const groupedByProvince = districts.reduce((acc, item) => {
+    const province = item.province || "TP.HCM";
+    if (!acc[province]) acc[province] = [];
+    acc[province].push(item);
+    return acc;
+  }, {} as Record<string, DistrictSummary[]>);
 
-  const cities: CitySummary[] = districts.length
-    ? Object.entries(groupedByProvince).map(([province, list]) => ({
-      name: province,
-      districts: list.map((item) => ({
-        name: item.district,
-        slug: item.slug,
-        price: `${formatPricePerM2(item.minPricePerM2)}–${formatPricePerM2(item.maxPricePerM2)}`,
-        totalListings: item.totalListings,
-      })),
-    }))
-    : DEFAULT_CITIES;
+  const cities: CitySummary[] = Object.entries(groupedByProvince).map(([province, list]) => ({
+    name: province,
+    districts: list.map((item) => ({
+      name: item.district,
+      slug: item.slug,
+      price: `${formatPricePerM2(item.minPricePerM2)}–${formatPricePerM2(item.maxPricePerM2)}`,
+      totalListings: item.totalListings,
+    })),
+  }));
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
@@ -123,7 +92,7 @@ export default async function KhuVucPage() {
       </div>
 
       <div className="space-y-10">
-        {cities.map((city) => (
+        {cities.length ? cities.map((city) => (
           <section key={city.name}>
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <span className="w-1 h-6 bg-primary rounded-full inline-block" />
@@ -162,7 +131,14 @@ export default async function KhuVucPage() {
               ))}
             </div>
           </section>
-        ))}
+        )) : (
+          <div className="bg-white rounded-2xl shadow-card border border-border p-8 text-center">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Chưa có dữ liệu khu vực</h2>
+            <p className="text-sm text-gray-500">
+              Đang cập nhật dữ liệu từ cơ sở dữ liệu. Vui lòng kiểm tra lại sau.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

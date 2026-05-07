@@ -4,6 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Câu hỏi thường gặp — RealPrice",
   description: "Giải đáp các thắc mắc phổ biến về RealPrice: cách xem giá, đăng tin, so sánh bất động sản.",
+  keywords: "faq RealPrice, câu hỏi bất động sản, hướng dẫn đăng tin, hướng dẫn so sánh bất động sản, sale nhà đất, tiếp cận khách mua",
 };
 
 const FAQS = [

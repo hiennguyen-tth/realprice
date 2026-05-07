@@ -83,7 +83,7 @@ export function MapView({
   }, [getCurrentBbox, onBboxChange, setIsMapLoaded]);
 
   const { markers } = useLandMarkers(currentBbox);
-  const { heatmapAreas } = useHeatmap(currentBbox, mapMode === "heatmap");
+  const { heatmapAreas } = useHeatmap(currentBbox, viewport.zoom, mapMode === "heatmap");
 
   return (
     <div className={className}>

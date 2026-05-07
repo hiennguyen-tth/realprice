@@ -34,10 +34,11 @@ export default async function DistrictPage({ params }: Props) {
   const { district } = await params;
   const decodedDistrict = decodeURIComponent(district);
 
-  const [statsResult, listingsResult, bankValResult] = await Promise.allSettled([
+  const [statsResult, listingsResult, bankValResult, heatmapResult] = await Promise.allSettled([
     getDistrictOverview(decodedDistrict),
-    getListings("", 1, 8, { sortBy: "newest" }),
+    getListings("", 1, 8, { district: decodedDistrict, sortBy: "newest" }),
     getBankValuations(decodedDistrict),
+    getDistrictHeatmap(decodedDistrict),
   ]);
 
   if (statsResult.status === "rejected") {
@@ -178,6 +179,25 @@ export default async function DistrictPage({ params }: Props) {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </section>
+        )}
+
+        {/* Heatmap overview */}
+        {heatmapResult.status === 'fulfilled' && heatmapResult.value.length > 0 && (
+          <section>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">
+              Heatmap khu vực
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {heatmapResult.value.map((area) => (
+                <div key={area.id} className="bg-white rounded-2xl border border-border p-4 shadow-card">
+                  <p className="text-sm font-semibold text-gray-900 mb-2">{area.name || area.district}</p>
+                  <p className="text-xs text-gray-500 mb-1">Giá trung bình/m²: {formatPricePerM2(area.pricePerM2)}</p>
+                  <p className="text-xs text-gray-500">Cấp độ giá: {area.priceLevel}</p>
+                  <p className="text-xs text-gray-400 mt-2">Cập nhật: {new Date(area.updatedAt).toLocaleDateString('vi-VN')}</p>
+                </div>
+              ))}
             </div>
           </section>
         )}

@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Điều khoản sử dụng — RealPrice",
+  description:
+    "Điều khoản sử dụng RealPrice cho người dùng đăng tin, tìm kiếm và so sánh bất động sản trên nền tảng.",
+  keywords: "điều khoản sử dụng, điều khoản RealPrice, bất động sản, đăng tin bán nhà, quảng cáo bất động sản",
 };
 
 export default function TermsPage() {
