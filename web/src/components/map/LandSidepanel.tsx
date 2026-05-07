@@ -67,19 +67,19 @@ export function LandSidepanel({ landId, onClose }: LandSidepanelProps) {
             <div>
               <p className="text-xs text-gray-500 mb-0.5">Thấp nhất</p>
               <p className="text-sm font-bold text-green-600">
-                {formatShortPrice(land.minPrice)}
+                {formatShortPrice(listings.length > 0 ? Math.min(...listings.map((l: any) => Number(l.price))) : land.minPrice)}
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-500 mb-0.5">Trung bình</p>
               <p className="text-sm font-bold text-primary">
-                {formatShortPrice(land.avgPrice)}
+                {formatShortPrice(listings.length > 0 ? listings.reduce((s: number, l: any) => s + Number(l.price), 0) / listings.length : land.avgPrice)}
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-500 mb-0.5">Cao nhất</p>
               <p className="text-sm font-bold text-red-600">
-                {formatShortPrice(land.maxPrice)}
+                {formatShortPrice(listings.length > 0 ? Math.max(...listings.map((l: any) => Number(l.price))) : land.maxPrice)}
               </p>
             </div>
           </div>
@@ -132,7 +132,7 @@ export function LandSidepanel({ landId, onClose }: LandSidepanelProps) {
           </Link>
         </div>
       )}
-    </div>
+    </a>
   );
 }
 
@@ -140,7 +140,7 @@ function SidepanelListingCard({ listing }: { listing: Listing }) {
   const thumb = listing.images[0];
 
   return (
-    <div className="flex gap-3 p-3 bg-surface-secondary rounded-xl hover:bg-gray-100 transition-colors">
+    <a href={`/listing/${listing.id}`} className="flex gap-3 p-3 bg-surface-secondary rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
       {/* Thumbnail */}
       <div className="shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-200">
         {thumb ? (
@@ -176,6 +176,6 @@ function SidepanelListingCard({ listing }: { listing: Listing }) {
       <div className="shrink-0">
         <CompareButton listing={listing} size="sm" />
       </div>
-    </div>
+    </a>
   );
 }

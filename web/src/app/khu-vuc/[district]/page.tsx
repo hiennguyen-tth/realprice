@@ -33,24 +33,49 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // Convert slug to Vietnamese district name
 function slugToDistrict(slug: string): string {
   const map: Record<string, string> = {
+    // TP.HCM
     "quan-1": "Quận 1", "quan-2": "Quận 2", "quan-3": "Quận 3",
     "quan-4": "Quận 4", "quan-5": "Quận 5", "quan-6": "Quận 6",
     "quan-7": "Quận 7", "quan-8": "Quận 8", "quan-9": "Quận 9",
     "quan-10": "Quận 10", "quan-11": "Quận 11", "quan-12": "Quận 12",
     "binh-thanh": "Bình Thạnh", "binh-tan": "Bình Tân",
-    "binh-chanh": "Bình Chánh", "binh-duong": "Bình Dương",
-    "go-vap": "Gò Vấp", "tan-binh": "Tân Bình", "tan-phu": "Tân Phú",
+    "binh-chanh": "Bình Chánh", "go-vap": "Gò Vấp",
+    "tan-binh": "Tân Bình", "tan-phu": "Tân Phú",
     "phu-nhuan": "Phú Nhuận", "thu-duc": "Thủ Đức",
-    "nha-be": "Nhà Bè", "hoc-mon": "Hóc Môn", "cu-chi": "Củ Chi",
-    "can-gio": "Cần Giờ", "dong-da": "Đống Đa", "hoan-kiem": "Hoàn Kiếm",
-    "ba-dinh": "Ba Đình", "hai-ba-trung": "Hai Bà Trưng",
-    "tay-ho": "Tây Hồ", "long-bien": "Long Biên", "cau-giay": "Cầu Giấy",
-    "thanh-xuan": "Thanh Xuân", "hoang-mai": "Hoàng Mai",
-    "ha-dong": "Hà Đông", "son-tra": "Sơn Trà", "hai-chau": "Hải Châu",
+    "nha-be": "Nhà Bè", "hoc-mon": "Hóc Môn",
+    "cu-chi": "Củ Chi", "can-gio": "Cần Giờ",
+    // Hà Nội
+    "hoan-kiem": "Hoàn Kiếm", "ba-dinh": "Ba Đình",
+    "dong-da": "Đống Đa", "hai-ba-trung": "Hai Bà Trưng",
+    "tay-ho": "Tây Hồ", "long-bien": "Long Biên",
+    "cau-giay": "Cầu Giấy", "thanh-xuan": "Thanh Xuân",
+    "hoang-mai": "Hoàng Mai", "ha-dong": "Hà Đông",
+    "nam-tu-liem": "Nam Từ Liêm", "bac-tu-liem": "Bắc Từ Liêm",
+    "tay-ho": "Tây Hồ", "gia-lam": "Gia Lâm",
+    "dong-anh": "Đông Anh", "soc-son": "Sóc Sơn",
+    "thanh-tri": "Thanh Trì", "me-linh": "Mê Linh",
+    // Đà Nẵng
+    "son-tra": "Sơn Trà", "hai-chau": "Hải Châu",
     "ngu-hanh-son": "Ngũ Hành Sơn", "lien-chieu": "Liên Chiểu",
     "thanh-khe": "Thanh Khê", "cam-le": "Cẩm Lệ",
+    "hoa-vang": "Hòa Vang",
+    // Bình Dương
+    "thu-dau-mot": "Thủ Dầu Một", "di-an": "Dĩ An",
+    "thuan-an": "Thuận An", "ben-cat": "Bến Cát",
+    "tan-uyen": "Tân Uyên", "bau-bang": "Bàu Bàng",
+    "bac-tan-uyen": "Bắc Tân Uyên", "dau-tieng": "Dầu Tiếng",
+    "phu-giao": "Phú Giáo",
+    // Đồng Nai
+    "bien-hoa": "Biên Hòa", "long-thanh": "Long Thành",
+    "nhon-trach": "Nhơn Trạch", "trang-bom": "Trảng Bom",
+    // Các tỉnh khác
+    "hai-phong": "Hải Phòng", "can-tho": "Cần Thơ",
+    "khanh-hoa": "Khánh Hòa", "nha-trang": "Nha Trang",
+    "lam-dong": "Lâm Đồng", "da-lat": "Đà Lạt",
+    "ba-ria": "Bà Rịa", "vung-tau": "Vũng Tàu",
+    "long-an": "Long An", "tien-giang": "Tiền Giang",
   };
-  return map[slug] || decodeURIComponent(slug);
+  return map[slug] || slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
 export default async function DistrictPage({ params }: Props) {

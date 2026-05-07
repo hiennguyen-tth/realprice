@@ -51,13 +51,13 @@ export default function ListingPage({ params }: Props) {
       <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <Link href="/" className="hover:text-primary transition-colors">Trang chủ</Link>
         <span>›</span>
-        {listing.land && (
+        {(listing.district || listing.land?.district) && (
           <>
             <Link
-              href={`/khu-vuc/${encodeURIComponent(listing.land.district.toLowerCase().replace(/\s+/g, "-"))}`}
+              href={`/khu-vuc/${encodeURIComponent((listing.district || listing.land?.district || '').toLowerCase().replace(/\s+/g, "-"))}`}
               className="hover:text-primary transition-colors"
             >
-              {listing.land.district}
+              {listing.district || listing.land?.district}
             </Link>
             <span>›</span>
           </>
