@@ -51,11 +51,12 @@ router.get('/', cacheMiddleware(60), async (req, res, next) => {
         'l.slug',
       ];
 
-      const params = searchFields.map(() => pattern);
+      const unaccentPattern = `%${queryText.replace(/%/g, '').replace(/_/g, '')}%`;
+      const params = searchFields.map(() => unaccentPattern);
       let idx = searchFields.length + 1;
       let whereClause = `li.status = 'active'
              AND (
-               ${searchFields.map((field, index) => `${field} ILIKE $${index + 1}`).join('\n               OR ')}
+               ${searchFields.map((field, index) => `unaccent(${field}::text) ILIKE unaccent($${index + 1})`).join('\n               OR ')}
              )`;
 
       const normalizedListingType = String(listingType || '').trim().toLowerCase();
