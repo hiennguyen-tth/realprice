@@ -1,10 +1,37 @@
 'use strict';
 
 const BaseRepository = require('../shared/BaseRepository');
+const { slugifyAddress } = require('../../utils/addressUtils');
 
 class LandRepository extends BaseRepository {
   constructor(db) {
     super('lands', db);
+  }
+
+  async findDistrictBySlug(districtSlug) {
+    if (!districtSlug) {
+      return null;
+    }
+
+    const normalizedSlug = districtSlug.trim();
+    const { rows } = await this._query(
+      `SELECT DISTINCT district
+       FROM lands
+       WHERE district IS NOT NULL`
+    );
+
+    for (const row of rows) {
+      if (slugifyAddress(row.district || '') === normalizedSlug) {
+        return row.district;
+      }
+    }
+
+    const fallback = districtSlug.replace(/-/g, ' ').trim();
+    const { rows: fallbackRows } = await this._query(
+      `SELECT district FROM lands WHERE district ILIKE $1 LIMIT 1`,
+      [`%${fallback}%`]
+    );
+    return fallbackRows[0]?.district || null;
   }
 
   async getBbox({ minLng, minLat, maxLng, maxLat, minPrice, maxPrice, limit }) {
@@ -210,7 +237,8 @@ class LandRepository extends BaseRepository {
   }
 
   async getTopStreetsByDistrict(district, limit = 10) {
-    const pattern = `%${district.replace(/-/g, ' ').replace(/%/g, '')}%`;
+    const actualDistrict = await this.findDistrictBySlug(district) || district;
+    const pattern = `%${actualDistrict.replace(/-/g, ' ').replace(/%/g, '')}%`;
     const { rows } = await this._query(
       `SELECT
          l.address AS street,
@@ -228,7 +256,8 @@ class LandRepository extends BaseRepository {
   }
 
   async getDistrictPriceChange(district, days = 30) {
-    const pattern = `%${district.replace(/-/g, ' ').replace(/%/g, '')}%`;
+    const actualDistrict = await this.findDistrictBySlug(district) || district;
+    const pattern = `%${actualDistrict.replace(/-/g, ' ').replace(/%/g, '')}%`;
     const { rows } = await this._query(
       `SELECT
          AVG(ph.price_per_m2) FILTER (WHERE ph.recorded_at >= NOW() - ($2 || ' days')::INTERVAL) AS recent_avg,
@@ -243,18 +272,24 @@ class LandRepository extends BaseRepository {
   }
 
   async findByDistrictAndAddress(districtSlug, streetSlug) {
-    const districtPattern = `%${districtSlug.replace(/-/g, ' ').replace(/%/g, '').trim()}%`;
-    const streetPattern = `%${streetSlug.replace(/-/g, ' ').replace(/%/g, '').trim()}%`;
+    const actualDistrict = await this.findDistrictBySlug(districtSlug) || districtSlug;
+    const districtPattern = `%${actualDistrict.replace(/-/g, ' ').replace(/%/g, '').trim()}%`;
+    const addressPattern = `%${streetSlug.replace(/-/g, ' ').replace(/%/g, '').trim()}%`;
+    const slugPattern = `%${slugifyAddress(streetSlug)}%`;
     const { rows } = await this._query(
       `SELECT l.*,
               ST_Y(l.location::geometry) AS lat_coord,
               ST_X(l.location::geometry) AS lng_coord
        FROM lands l
        WHERE l.district ILIKE $1
-         AND (l.address ILIKE $2 OR l.ward ILIKE $2 OR l.slug ILIKE $2)
+         AND (
+           l.address ILIKE $2
+           OR l.ward ILIKE $2
+           OR l.slug ILIKE $3
+         )
        ORDER BY l.created_at DESC
        LIMIT 1`,
-      [districtPattern, streetPattern]
+      [districtPattern, addressPattern, slugPattern]
     );
     return rows[0] || null;
   }

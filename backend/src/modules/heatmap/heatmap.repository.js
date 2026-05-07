@@ -21,16 +21,25 @@ class HeatmapRepository extends BaseRepository {
    * @returns {Promise<object[]>}
    */
   async getInBbox(minLng, minLat, maxLng, maxLat, byWard = false) {
-    const wardFilter = byWard ? 'AND ward IS NOT NULL' : 'AND ward IS NULL';
+    const whereClauses = [];
+    const params = [];
 
+    if (minLng !== null && minLat !== null && maxLng !== null && maxLat !== null) {
+      whereClauses.push(
+        `ST_Intersects(boundary, ST_MakeEnvelope($1, $2, $3, $4, 4326)::geometry::geography)`
+      );
+      params.push(minLng, minLat, maxLng, maxLat);
+    }
+
+    whereClauses.push(byWard ? 'ward IS NOT NULL' : 'ward IS NULL');
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
     const { rows } = await this._query(
       `SELECT api.*
        FROM area_price_index api
-       WHERE ($1::float IS NULL OR $2::float IS NULL OR $3::float IS NULL OR $4::float IS NULL
-              OR TRUE)
-         ${wardFilter}
+       ${whereSql}
        ORDER BY api.heat_level DESC, api.total_listings DESC`,
-      [minLng, minLat, maxLng, maxLat]
+      params
     );
     return rows;
   }
