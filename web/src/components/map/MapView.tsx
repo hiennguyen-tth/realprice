@@ -20,7 +20,7 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 interface MapViewProps {
   onLandSelect?: (marker: LandMarker) => void;
-  onBboxChange?: (bbox: BoundingBox) => void;
+  onBboxChange?: (bbox: BoundingBox, zoom?: number) => void;
   className?: string;
   interactive?: boolean;
 }
@@ -67,7 +67,7 @@ export function MapView({
       const bbox = getCurrentBbox();
       if (bbox) {
         setCurrentBbox(bbox);
-        onBboxChange?.(bbox);
+        onBboxChange?.(bbox, evt.viewState.zoom);
       }
     },
     [getCurrentBbox, onBboxChange, setViewport]
@@ -82,7 +82,7 @@ export function MapView({
     }
   }, [getCurrentBbox, onBboxChange, setIsMapLoaded]);
 
-  const { markers } = useLandMarkers(currentBbox);
+  const { markers } = useLandMarkers(currentBbox, viewport.zoom);
   const { heatmapAreas } = useHeatmap(currentBbox, viewport.zoom, mapMode === "heatmap");
 
   return (

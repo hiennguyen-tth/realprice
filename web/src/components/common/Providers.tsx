@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { SessionProvider, useSession } from "next-auth/react";
 import type { Session } from "next-auth";
+import { ChatBot } from "@/components/chat/ChatBot";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -44,6 +45,7 @@ export function Providers({ children, session }: ProvidersProps) {
       <TokenSync />
       <QueryClientProvider client={queryClient}>
         {children}
+        <ChatBot />
         {process.env.NODE_ENV === "development" && (
           <ReactQueryDevtools initialIsOpen={false} />
         )}

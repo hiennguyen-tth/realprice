@@ -84,18 +84,23 @@ async function insertListing(client, ad) {
   const listingType = getListingType(ad);
 
   try {
+    const crypto = require('crypto');
+    const sourceHash = crypto.createHash('md5')
+      .update((ad.subject || '').toLowerCase().trim() + price + (area || '') + address)
+      .digest('hex');
+
     if (lat && lng) {
       await client.query(`
-        INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, location, score, district, province)
-        VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,ST_SetSRID(ST_MakePoint($9,$10),4326),50,$11,$12)
-        ON CONFLICT DO NOTHING
-      `, [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', lng, lat, district, province]);
+        INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, location, score, district, province, source_hash)
+        VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,ST_SetSRID(ST_MakePoint($9,$10),4326),50,$11,$12,$13)
+        ON CONFLICT (source_hash) DO NOTHING
+      `, [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', lng, lat, district, province, sourceHash]);
     } else {
       await client.query(`
-        INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, score, district, province)
-        VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,50,$9,$10)
-        ON CONFLICT DO NOTHING
-      `, [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', district, province]);
+        INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, score, district, province, source_hash)
+        VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,50,$9,$10,$11)
+        ON CONFLICT (source_hash) DO NOTHING
+      `, [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', district, province, sourceHash]);
     }
     return true;
   } catch (e) {
@@ -154,9 +159,10 @@ async function main() {
 
   console.log(`\n🎉 Done! Inserted: ${totalInserted}, Failed/Skipped: ${totalFailed}`);
 
-  // Rebuild lands and heatmap sau khi crawl
+  // Clean duplicates + Rebuild lands and heatmap sau khi crawl
   const rebuildClient = await pool.connect();
   try {
+    await cleanDuplicates(rebuildClient);
     await rebuildLandsAndHeatmap(rebuildClient);
   } finally {
     rebuildClient.release();
@@ -165,6 +171,19 @@ async function main() {
 }
 
 main().catch(console.error);
+
+async function cleanDuplicates(client) {
+  console.log('🧹 Cleaning duplicates...');
+  const result = await client.query(`
+    DELETE FROM listings
+    WHERE id NOT IN (
+      SELECT DISTINCT ON (title, price, area, address) id
+      FROM listings
+      ORDER BY title, price, area, address, created_at ASC
+    )
+  `);
+  console.log(`✅ Removed ${result.rowCount} duplicates`);
+}
 
 async function rebuildLandsAndHeatmap(client) {
   console.log('🔄 Rebuilding lands and heatmap...');
