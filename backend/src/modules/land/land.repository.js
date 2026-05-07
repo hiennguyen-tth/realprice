@@ -217,7 +217,8 @@ class LandRepository extends BaseRepository {
   }
 
   async getDistrictOverview(district) {
-    const pattern = `%${district.replace(/-/g, ' ').replace(/%/g, '')}%`;
+    const actualDistrict = await this.findDistrictBySlug(district) || district;
+    const pattern = `%${actualDistrict.replace(/-/g, ' ').replace(/%/g, '')}%`;
     const { rows } = await this._query(
       `SELECT
          l.district,
