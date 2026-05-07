@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Chính sách bảo mật — RealPrice",
+  description:
+    "Chính sách bảo mật RealPrice đảm bảo dữ liệu người dùng và thông tin tin đăng bất động sản được bảo vệ an toàn.",
+  keywords: "chính sách bảo mật, bảo mật dữ liệu, bất động sản, RealPrice, ads bất động sản",
 };
 
 export default function PrivacyPage() {

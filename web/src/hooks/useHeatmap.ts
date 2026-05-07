@@ -9,7 +9,7 @@ import debounce from "lodash/debounce";
 
 const DEBOUNCE_MS = 600;
 
-export function useHeatmap(bbox: BoundingBox | null, enabled = true) {
+export function useHeatmap(bbox: BoundingBox | null, zoom: number, enabled = true) {
   const [debouncedBbox, setDebouncedBbox] = useState<BoundingBox | null>(bbox);
 
   const debouncedSetBbox = useRef(
@@ -27,11 +27,11 @@ export function useHeatmap(bbox: BoundingBox | null, enabled = true) {
     };
   }, [bbox, debouncedSetBbox]);
 
-  const cacheKey = debouncedBbox ? bboxToCacheKey(debouncedBbox) : null;
+  const cacheKey = debouncedBbox ? `${bboxToCacheKey(debouncedBbox)}:${zoom}` : null;
 
   const { data, isLoading, error } = useQuery<HeatmapArea[]>({
     queryKey: ["heatmap", cacheKey],
-    queryFn: () => getHeatmap(debouncedBbox!),
+    queryFn: () => getHeatmap(debouncedBbox!, zoom),
     enabled: enabled && !!debouncedBbox,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

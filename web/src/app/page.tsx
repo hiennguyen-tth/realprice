@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "RealPrice — So sánh giá bất động sản theo vị trí tại Việt Nam",
   description:
     "Nền tảng so sánh giá bất động sản hàng đầu Việt Nam. Heatmap giá, định giá ngân hàng, lịch sử giá theo từng đường phố. Dữ liệu thực tế, minh bạch, cập nhật hàng ngày.",
-  keywords: "bất động sản, giá nhà đất, heatmap giá, định giá ngân hàng, mua bán nhà",
+  keywords: "bất động sản, giá nhà đất, heatmap giá, định giá ngân hàng, mua bán nhà, sale nhà, sale đất, khuyến mãi bất động sản, ưu đãi bán đất",
   openGraph: {
     title: "RealPrice — So sánh giá bất động sản theo vị trí",
     description: "Heatmap giá, định giá ngân hàng, lịch sử biến động giá theo từng đường phố tại Việt Nam.",

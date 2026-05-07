@@ -5,7 +5,7 @@ import { formatVND, formatShortPrice } from "./formatters";
 const SITE_NAME = "RealPrice";
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://realprice.vn";
 const SITE_DESCRIPTION =
-  "So sánh giá bất động sản theo vị trí tại Việt Nam. Heatmap giá, định giá ngân hàng, lịch sử giá theo từng đường phố.";
+  "So sánh giá bất động sản theo vị trí tại Việt Nam. Heatmap giá, định giá ngân hàng, lịch sử giá theo từng đường phố, tin bán nhà đất. Dữ liệu thực tế, minh bạch, cập nhật hàng ngày.";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Base metadata (used in root layout)
@@ -27,6 +27,11 @@ export function generateBaseMetadata(): Metadata {
       "giá đất theo phường",
       "bất động sản Hà Nội",
       "bất động sản TP HCM",
+      "sale bất động sản",
+      "bán nhà",
+      "bán đất",
+      "mua bán nhà đất",
+      "ưu đãi bất động sản",
     ],
     authors: [{ name: "RealPrice", url: SITE_URL }],
     creator: "RealPrice",
@@ -81,6 +86,15 @@ export function generateLandMetadata(
   return {
     title,
     description,
+    keywords: [
+      land.street,
+      land.district,
+      "giá đất",
+      "bán đất",
+      "bất động sản",
+      "sale bất động sản",
+      "mua bán nhà đất",
+    ],
     openGraph: {
       type: "website",
       locale: "vi_VN",
@@ -114,6 +128,14 @@ export function generateDistrictMetadata(
   return {
     title,
     description,
+    keywords: [
+      `bất động sản ${district}`,
+      "giá đất",
+      "heatmap giá",
+      "sale bất động sản",
+      "mua bán nhà đất",
+      "định giá ngân hàng",
+    ],
     openGraph: {
       type: "website",
       locale: "vi_VN",
@@ -168,10 +190,10 @@ export function generateLandStructuredData(
     aggregateRating:
       listings.length > 0
         ? {
-            "@type": "AggregateRating",
-            ratingValue: "4.2",
-            reviewCount: listings.length,
-          }
+          "@type": "AggregateRating",
+          ratingValue: "4.2",
+          reviewCount: listings.length,
+        }
         : undefined,
   };
 }

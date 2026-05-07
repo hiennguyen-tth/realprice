@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Đăng tin bán bất động sản",
   description:
     "Đăng tin bán bất động sản miễn phí trên RealPrice. Tiếp cận hàng nghìn người mua tiềm năng. Hiển thị trực tiếp trên bản đồ giá.",
-  robots: { index: false },
+  keywords: "đăng tin bất động sản, đăng tin bán nhà, đăng tin bán đất, sale nhà, sale đất, quảng cáo bất động sản, tiếp cận người mua",
 };
 
 export default function PostListingPage() {
