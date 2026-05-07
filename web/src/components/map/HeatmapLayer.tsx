@@ -78,8 +78,25 @@ export function HeatmapLayer({ areas }: HeatmapLayerProps) {
               type="line"
               paint={{
                 "line-color": HEAT_COLORS[level],
-                "line-width": 1,
-                "line-opacity": 0.6,
+                "line-width": 1.5,
+                "line-opacity": 0.8,
+              }}
+            />
+            {/* Label layer */}
+            <Layer
+              id={`heatmap-label-${level}`}
+              type="symbol"
+              layout={{
+                "text-field": ["concat", ["get", "district"], "\n", 
+                  ["number-format", ["to-number", ["get", "pricePerM2"]], {"min-fraction-digits": 0, "max-fraction-digits": 0}]
+                ],
+                "text-size": 11,
+                "text-anchor": "center",
+              }}
+              paint={{
+                "text-color": "#1f2937",
+                "text-halo-color": "#ffffff",
+                "text-halo-width": 1.5,
               }}
             />
           </Source>

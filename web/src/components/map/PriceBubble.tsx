@@ -9,10 +9,13 @@ interface PriceBubbleProps {
   marker: LandMarker;
   isSelected: boolean;
   onClick: () => void;
+  zoom?: number;
 }
 
-export function PriceBubble({ marker, isSelected, onClick }: PriceBubbleProps) {
+export function PriceBubble({ marker, isSelected, onClick, zoom = 12 }: PriceBubbleProps) {
   const price = formatShortPrice(marker.pricePerM2);
+  // Ẩn markers khi zoom quá nhỏ (< 9)
+  if (zoom < 9) return null;
   const longitude = marker.location?.longitude;
   const latitude = marker.location?.latitude;
 
