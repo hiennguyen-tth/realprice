@@ -35,7 +35,11 @@ class HeatmapRepository extends BaseRepository {
 
     const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
     const { rows } = await this._query(
-      `SELECT api.*
+      `SELECT api.id, api.district, api.ward, api.city,
+              api.avg_price, api.avg_price_per_m2, api.total_listings,
+              api.min_price, api.max_price, api.price_level, api.heat_level,
+              api.updated_at, api.color,
+              ST_AsGeoJSON(api.boundary)::json AS boundary_geojson
        FROM area_price_index api
        ${whereSql}
        ORDER BY api.heat_level DESC, api.total_listings DESC`,

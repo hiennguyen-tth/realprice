@@ -63,15 +63,23 @@ async function insertListing(client, ad) {
   const address = [ad.subject_params?.address, ad.area_name, ad.region_name].filter(Boolean).join(', ') || ad.region_name || '';
 
   try {
+    // Check if listing already exists by title and price
+    const existing = await client.query(
+      'SELECT id FROM listings WHERE title = $1 AND price = $2 AND area = $3 LIMIT 1',
+      [ad.subject, price, area]
+    );
+    if (existing.rows.length > 0) {
+      return false; // skip duplicate
+    }
+
     await client.query(`
-      INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, location, score, district, province)
+      INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, location, score, district, province, source, source_id)
       VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,
         ${lat && lng ? `ST_SetSRID(ST_MakePoint($9,$10),4326)` : 'NULL'},
-        50,${lat && lng ? '$11,$12' : '$9,$10'})
-      ON CONFLICT DO NOTHING
+        50,${lat && lng ? '$11,$12,$13,$14' : '$9,$10,$11,$12'})
     `, lat && lng
-      ? [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', lng, lat, district, province]
-      : [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', district, province]
+      ? [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', lng, lat, district, province, 'chotot', ad.list_id || ad.id]
+      : [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', district, province, 'chotot', ad.list_id || ad.id]
     );
     return true;
   } catch (e) {
