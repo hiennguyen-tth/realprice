@@ -1,0 +1,14 @@
+/* RealPrice */
+/* https://realprice.vn */
+
+/* TEAM */
+Developer: Your Team
+Site: https://realprice.vn
+
+/* THANKS */
+Technology: Next.js, React, TypeScript, Tailwind CSS
+
+/* SITE */
+Language: Vietnamese
+Standards: HTML5, CSS3, ECMAScript 6+
+Components: Real Estate Platform, Price Analytics
