@@ -158,7 +158,7 @@ export default function HomePage() {
                 <input
                   type="text"
                   name="q"
-                  placeholder="Tìm theo đường, quận, khu vực..."
+                  placeholder="VD: Nguyễn Trãi Quận 1, chung cư Bình Thạnh..."
                   autoComplete="off"
                   className="w-full pl-11 pr-4 py-3.5 text-gray-900 bg-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-lg placeholder-gray-400"
                 />
