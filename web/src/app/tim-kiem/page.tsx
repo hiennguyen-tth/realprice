@@ -24,7 +24,8 @@ const SORT_OPTIONS = [
   { value: "newest", label: "Mới nhất" },
   { value: "price_asc", label: "Giá tăng dần" },
   { value: "price_desc", label: "Giá giảm dần" },
-  { value: "area_asc", label: "Diện tích tăng" },
+  { value: "area_asc", label: "Diện tích tăng dần" },
+  { value: "area_desc", label: "Diện tích giảm dần" },
 ] as const;
 
 const PAGE_SIZE = 20;
@@ -47,7 +48,6 @@ function SearchContent() {
         page,
         PAGE_SIZE
       ),
-    enabled: !!initialQuery,
     placeholderData: (prev) => prev,
   });
 
@@ -75,7 +75,7 @@ function SearchContent() {
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Tìm theo đường, quận, khu vực..."
+            placeholder="VD: Nguyễn Trãi Quận 1, chung cư Bình Thạnh..."
             className="w-full pl-12 pr-4 py-3 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           />
         </div>
@@ -169,12 +169,30 @@ function SearchContent() {
           </div>
 
           {!initialQuery ? (
-            <div className="text-center py-16 text-gray-400">
-              <svg className="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <p>Nhập từ khóa để tìm kiếm bất động sản</p>
+            <div>
+              <h2 className="text-base font-semibold text-gray-700 mb-4">
+                {isLoading ? "Đang tải tin đăng mới nhất..." : "Tin đăng mới nhất"}
+              </h2>
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {[...Array(6)].map((_, i) => <ListingCardSkeleton key={i} />)}
+                </div>
+              ) : listings.length === 0 ? (
+                <div className="text-center py-16 text-gray-400">
+                  <svg className="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <p className="font-medium text-gray-500 mb-1">Chưa có tin đăng nào</p>
+                  <p className="text-sm text-gray-400">Thử tìm kiếm theo tên đường hoặc quận/huyện</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {listings.map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} />
+                  ))}
+                </div>
+              )}
             </div>
           ) : isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">

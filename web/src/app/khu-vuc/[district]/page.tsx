@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const stats = await getDistrictOverview(decodeURIComponent(district));
     return generateDistrictMetadata(decodeURIComponent(district), stats);
   } catch {
-    return { title: `Giá BDS ${decodeURIComponent(district)}` };
+    return { title: `Giá BDS ${slugToDistrict(district)} | RealPrice` };
   }
 }
 
@@ -90,12 +90,49 @@ export default async function DistrictPage({ params }: Props) {
   ]);
 
   if (statsResult.status === "rejected") {
+    const SUGGEST_DISTRICTS = [
+      { name: "Quận 1", slug: "quan-1", city: "TP.HCM" },
+      { name: "Bình Thạnh", slug: "binh-thanh", city: "TP.HCM" },
+      { name: "Quận 7", slug: "quan-7", city: "TP.HCM" },
+      { name: "Hoàn Kiếm", slug: "hoan-kiem", city: "Hà Nội" },
+      { name: "Cầu Giấy", slug: "cau-giay", city: "Hà Nội" },
+      { name: "Hải Châu", slug: "hai-chau", city: "Đà Nẵng" },
+    ];
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">
-          Không tìm thấy quận {decodedDistrict}
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5">
+          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          Chưa có dữ liệu cho khu vực này
         </h1>
-        <Link href="/" className="text-primary hover:underline">Về trang chủ</Link>
+        <p className="text-gray-500 mb-8 text-sm">
+          Khu vực <strong>{decodedDistrict}</strong> chưa có dữ liệu hoặc đang được cập nhật.
+          Bạn có thể thử một trong các khu vực phổ biến dưới đây.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+          {SUGGEST_DISTRICTS.map((d) => (
+            <Link
+              key={d.slug}
+              href={`/khu-vuc/${d.slug}`}
+              className="bg-white border border-border rounded-xl p-3 hover:border-primary/40 hover:shadow-card transition-all text-left"
+            >
+              <p className="font-semibold text-sm text-gray-900 group-hover:text-primary">{d.name}</p>
+              <p className="text-xs text-gray-400">{d.city}</p>
+            </Link>
+          ))}
+        </div>
+        <div className="flex gap-3 justify-center">
+          <Link href="/khu-vuc" className="bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary-dark transition-colors">
+            Xem tất cả khu vực
+          </Link>
+          <Link href="/tim-kiem" className="border-2 border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-semibold hover:border-primary hover:text-primary transition-colors">
+            Tìm kiếm BDS
+          </Link>
+        </div>
       </div>
     );
   }

@@ -89,17 +89,21 @@ async function insertListing(client, ad) {
       .update((ad.subject || '').toLowerCase().trim() + price + (area || '') + address)
       .digest('hex');
 
+    // Check if already exists
+    const existing = await client.query('SELECT id FROM listings WHERE source_hash = $1 LIMIT 1', [sourceHash]);
+    if (existing.rows.length > 0) {
+      return false;
+    }
+
     if (lat && lng) {
       await client.query(`
         INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, location, score, district, province, source_hash)
         VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,ST_SetSRID(ST_MakePoint($9,$10),4326),50,$11,$12,$13)
-        ON CONFLICT (source_hash) DO NOTHING
       `, [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', lng, lat, district, province, sourceHash]);
     } else {
       await client.query(`
         INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, score, district, province, source_hash)
         VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,50,$9,$10,$11)
-        ON CONFLICT (source_hash) DO NOTHING
       `, [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', district, province, sourceHash]);
     }
     return true;
@@ -114,7 +118,7 @@ async function main() {
   let totalInserted = 0;
   let totalFailed = 0;
   let page = 1;
-  const MAX_PAGES = 500;
+  const MAX_PAGES = 50;
 
   console.log('🚀 Bắt đầu crawl toàn quốc từ Chotot...');
 
@@ -123,7 +127,7 @@ async function main() {
       try {
         console.log(`📄 Page ${page}/${MAX_PAGES}...`);
         const ads = await fetchPage(page);
-        
+
         if (ads.length === 0) {
           console.log('Hết data!');
           break;

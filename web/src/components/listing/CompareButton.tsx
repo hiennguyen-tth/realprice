@@ -31,8 +31,8 @@ export function CompareButton({ listing, size = "md", className }: CompareButton
           : "Thêm vào so sánh"
       }
       className={clsx(
-        "flex items-center justify-center gap-1 rounded-lg font-medium transition-all",
-        size === "sm" ? "p-1.5" : "px-3 py-1.5 text-sm",
+        "flex items-center justify-center gap-1 rounded-lg font-medium transition-all text-xs",
+        size === "sm" ? "px-2 py-1" : "px-3 py-1.5 text-sm",
         inComparison
           ? "bg-primary text-white hover:bg-primary-dark"
           : disabled
@@ -43,19 +43,22 @@ export function CompareButton({ listing, size = "md", className }: CompareButton
       aria-pressed={inComparison}
     >
       {size === "sm" ? (
-        <svg
-          className="w-4 h-4"
-          fill={inComparison ? "currentColor" : "none"}
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-          />
-        </svg>
+        <>
+          <svg
+            className="w-3.5 h-3.5 shrink-0"
+            fill={inComparison ? "currentColor" : "none"}
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
+          </svg>
+          <span>{inComparison ? "Đã thêm" : "So sánh"}</span>
+        </>
       ) : (
         <>
           <svg
