@@ -1,0 +1,30 @@
+# RealPrice robots.txt
+# Generated for SEO optimization
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /tai-khoan/
+Disallow: /admin/
+Disallow: /*.json$
+Disallow: /search?
+Crawl-delay: 1
+
+# Google-specific directives
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Block bad bots
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+Sitemap: https://realprice.vn/sitemap.xml
