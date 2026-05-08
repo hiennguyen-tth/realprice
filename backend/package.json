@@ -18,9 +18,9 @@
     "db:seed": "psql $DATABASE_URL -f db/seeds/001_bank_valuations.sql"
   },
   "dependencies": {
-    "aws-sdk": "^2.1500.0",
+    "aws-sdk": "^2.1693.0",
     "axios": "^1.6.0",
-    "bcrypt": "^5.1.0",
+    "bcrypt": "^6.0.0",
     "bullmq": "^5.1.0",
     "cheerio": "^1.2.0",
     "cors": "^2.8.5",
