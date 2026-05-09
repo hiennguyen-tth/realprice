@@ -2,6 +2,7 @@
 
 const axios = require('axios');
 const { Pool } = require('pg');
+const crypto = require('crypto');
 
 const pool = new Pool({
   host: process.env.PGHOST || 'aws-1-ap-northeast-1.pooler.supabase.com',
@@ -21,6 +22,8 @@ const HEADERS = {
 
 const delay = ms => new Promise(r => setTimeout(r, ms));
 
+// ── Fetch listing list page ───────────────────────────────────────────────
+
 async function fetchPage(page) {
   const resp = await axios.get('https://gateway.chotot.com/v1/public/ad-listing', {
     params: { cg: 1000, limit: 20, page, st: 's,k' },
@@ -29,6 +32,22 @@ async function fetchPage(page) {
   });
   return resp.data?.ads ?? [];
 }
+
+// ── Fetch detail of a single ad (has images + description) ───────────────
+
+async function fetchAdDetail(listId) {
+  try {
+    const resp = await axios.get(`https://gateway.chotot.com/v1/public/ad-listing/${listId}`, {
+      headers: HEADERS,
+      timeout: 10000,
+    });
+    return resp.data?.ad ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Parsers ───────────────────────────────────────────────────────────────
 
 function parsePrice(raw) {
   if (!raw) return null;
@@ -41,9 +60,7 @@ function parsePrice(raw) {
 }
 
 function extractDistrict(ad) {
-  // area_name thường là "Quận Tân Bình", "Huyện Củ Chi"...
-  const areaName = ad.area_name || '';
-  return areaName
+  return (ad.area_name || '')
     .replace(/^(Quận|Huyện|Thị xã|Thành phố)\s+/i, '')
     .trim();
 }
@@ -56,13 +73,13 @@ function extractAddress(ad) {
   const parts = [
     ad.subject_params?.address,
     ad.area_name,
-    ad.region_name
+    ad.region_name,
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : (ad.region_name || '');
 }
 
 function getListingType(ad) {
-  const cat = ad.category || 0;
+  const cat = ad.category || ad.category_id || 0;
   if (cat === 1010) return 'chung_cu';
   if (cat === 1020) return 'nha_pho';
   if (cat === 1030) return 'dat_nen';
@@ -70,7 +87,28 @@ function getListingType(ad) {
   return 'nha_pho';
 }
 
-async function insertListing(client, ad) {
+// ── Extract images từ ad (list hoặc detail) ──────────────────────────────
+
+function extractImages(ad) {
+  // Từ detail API: ad.images là array of { name, ... }
+  if (Array.isArray(ad.images) && ad.images.length > 0) {
+    return ad.images.map(img => {
+      if (typeof img === 'string') return img;
+      // Chotot image URL pattern
+      const name = img.name || img.url || img.src || '';
+      return name.startsWith('http')
+        ? name
+        : `https://static.chotot.com/storage/chotot-kinhnghiem/c2c/picture/${name}`;
+    }).filter(Boolean);
+  }
+  // Từ list API: thumbnail
+  if (ad.thumbnail) return [ad.thumbnail];
+  return [];
+}
+
+// ── Insert 1 listing vào DB ───────────────────────────────────────────────
+
+async function insertListing(client, ad, detail) {
   const price = parsePrice(ad.price);
   const area = ad.size || ad.area;
   if (!price || !area) return false;
@@ -83,28 +121,82 @@ async function insertListing(client, ad) {
   const address = extractAddress(ad);
   const listingType = getListingType(ad);
 
-  try {
-    const crypto = require('crypto');
-    const sourceHash = crypto.createHash('md5')
-      .update((ad.subject || '').toLowerCase().trim() + price + (area || '') + address)
-      .digest('hex');
+  // Merge list data + detail data
+  const merged = { ...ad, ...(detail || {}) };
 
-    // Check if already exists
-    const existing = await client.query('SELECT id FROM listings WHERE source_hash = $1 LIMIT 1', [sourceHash]);
+  // ── FIX: lấy images + description + source_url ──
+  const images = extractImages(merged);
+  const description = merged.body || merged.content || merged.description || null;
+  const sourceId = String(ad.list_id || ad.ad_id || '');
+  const sourceUrl = sourceId ? `https://nha.chotot.com/${sourceId}` : null;
+
+  const sourceHash = crypto.createHash('md5')
+    .update((ad.subject || '').toLowerCase().trim() + price + (area || '') + address)
+    .digest('hex');
+
+  try {
+    const existing = await client.query(
+      'SELECT id FROM listings WHERE source_hash = $1 LIMIT 1',
+      [sourceHash]
+    );
+
     if (existing.rows.length > 0) {
-      return false;
+      // ── Update images/description nếu record cũ bị thiếu ──
+      await client.query(`
+        UPDATE listings
+        SET
+          images      = CASE WHEN images = '{}' THEN $1 ELSE images END,
+          description = CASE WHEN description IS NULL THEN $2 ELSE description END,
+          source_url  = CASE WHEN source_url IS NULL THEN $3 ELSE source_url END,
+          source      = CASE WHEN source IS NULL THEN 'nhatot' ELSE source END,
+          source_id   = CASE WHEN source_id IS NULL THEN $4 ELSE source_id END,
+          updated_at  = NOW()
+        WHERE source_hash = $5
+      `, [images, description, sourceUrl, sourceId, sourceHash]);
+      return false; // không tính là inserted mới
     }
+
+    // Insert mới
+    const base = [
+      ad.subject, description, price, area, pricePerM2, listingType,
+      address, ad.account_name || null, ad.phone || null,
+      district, province, sourceHash,
+      'nhatot', sourceId, sourceUrl,
+      images,
+    ];
 
     if (lat && lng) {
       await client.query(`
-        INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, location, score, district, province, source_hash)
-        VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,ST_SetSRID(ST_MakePoint($9,$10),4326),50,$11,$12,$13)
-      `, [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', lng, lat, district, province, sourceHash]);
+        INSERT INTO listings (
+          title, description, price, area, price_per_m2, listing_type, status,
+          address, contact_name, contact_phone,
+          district, province, source_hash,
+          source, source_id, source_url,
+          images, location, score
+        ) VALUES (
+          $1,$2,$3,$4,$5,$6,'active',
+          $7,$8,$9,
+          $10,$11,$12,
+          $13,$14,$15,
+          $16, ST_SetSRID(ST_MakePoint($17,$18),4326), 50
+        )
+      `, [...base, lng, lat]);
     } else {
       await client.query(`
-        INSERT INTO listings (title, price, area, price_per_m2, listing_type, status, address, contact_name, contact_phone, score, district, province, source_hash)
-        VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,50,$9,$10,$11)
-      `, [ad.subject, price, area, pricePerM2, listingType, address, ad.account_name || '', ad.phone || '', district, province, sourceHash]);
+        INSERT INTO listings (
+          title, description, price, area, price_per_m2, listing_type, status,
+          address, contact_name, contact_phone,
+          district, province, source_hash,
+          source, source_id, source_url,
+          images, score
+        ) VALUES (
+          $1,$2,$3,$4,$5,$6,'active',
+          $7,$8,$9,
+          $10,$11,$12,
+          $13,$14,$15,
+          $16, 50
+        )
+      `, base);
     }
     return true;
   } catch (e) {
@@ -113,14 +205,17 @@ async function insertListing(client, ad) {
   }
 }
 
+// ── Main ──────────────────────────────────────────────────────────────────
+
 async function main() {
   const client = await pool.connect();
   let totalInserted = 0;
+  let totalUpdated = 0;
   let totalFailed = 0;
   let page = 1;
   const MAX_PAGES = 50;
 
-  console.log('🚀 Bắt đầu crawl toàn quốc từ Chotot...');
+  console.log('🚀 Bắt đầu crawl toàn quốc từ Chotot (có ảnh + mô tả)...');
 
   try {
     while (page <= MAX_PAGES) {
@@ -134,21 +229,17 @@ async function main() {
         }
 
         for (const ad of ads) {
-          const ok = await insertListing(client, ad);
+          // ── Fetch detail để lấy images + description ──
+          const listId = ad.list_id || ad.ad_id;
+          const detail = listId ? await fetchAdDetail(listId) : null;
+          await delay(300); // tránh rate limit
+
+          const ok = await insertListing(client, ad, detail);
           if (ok) totalInserted++;
-          else totalFailed++;
+          else totalUpdated++;
         }
 
-        // Sample log để verify district
-        if (page === 1 && ads[0]) {
-          console.log('Sample:', {
-            district: extractDistrict(ads[0]),
-            province: extractProvince(ads[0]),
-            address: extractAddress(ads[0]),
-          });
-        }
-
-        console.log(`✅ Page ${page}: inserted: ${totalInserted}`);
+        console.log(`✅ Page ${page}: inserted=${totalInserted}, updated=${totalUpdated}`);
         page++;
         await delay(1500);
       } catch (e) {
@@ -161,9 +252,8 @@ async function main() {
     client.release();
   }
 
-  console.log(`\n🎉 Done! Inserted: ${totalInserted}, Failed/Skipped: ${totalFailed}`);
+  console.log(`\n🎉 Done! Inserted: ${totalInserted}, Updated: ${totalUpdated}, Failed: ${totalFailed}`);
 
-  // Clean duplicates + Rebuild lands and heatmap sau khi crawl
   const rebuildClient = await pool.connect();
   try {
     await cleanDuplicates(rebuildClient);
@@ -175,6 +265,8 @@ async function main() {
 }
 
 main().catch(console.error);
+
+// ── Cleanup & rebuild (giữ nguyên từ bản gốc) ────────────────────────────
 
 async function cleanDuplicates(client) {
   console.log('🧹 Cleaning duplicates...');
@@ -192,7 +284,6 @@ async function cleanDuplicates(client) {
 async function rebuildLandsAndHeatmap(client) {
   console.log('🔄 Rebuilding lands and heatmap...');
 
-  // Tạo/update lands
   await client.query(`
     INSERT INTO lands (address, district, city, slug_district, slug_street, location, min_price, max_price, avg_price, price_per_m2, total_listings)
     SELECT
@@ -209,7 +300,6 @@ async function rebuildLandsAndHeatmap(client) {
     ON CONFLICT (slug_district, slug_street) DO NOTHING
   `);
 
-  // Link listings → lands
   await client.query(`
     UPDATE listings li
     SET land_id = l.id
@@ -217,7 +307,6 @@ async function rebuildLandsAndHeatmap(client) {
     WHERE li.address = l.address AND li.location = l.location AND li.land_id IS NULL
   `);
 
-  // Rebuild heatmap
   await client.query(`DELETE FROM area_price_index`);
   await client.query(`
     INSERT INTO area_price_index (district, city, avg_price, avg_price_per_m2, total_listings, min_price, max_price, price_level, heat_level, color, boundary)
