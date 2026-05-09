@@ -37,10 +37,12 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'cdn.chotot.com',
+        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'static.chotot.com',
+        pathname: '/**',
       },
     ],
   },
