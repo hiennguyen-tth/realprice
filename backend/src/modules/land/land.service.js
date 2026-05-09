@@ -3,6 +3,20 @@
 const { NotFoundError } = require('../../utils/errors');
 const { normalizeAddress, slugifyAddress } = require('../../utils/addressUtils');
 const { parseBbox } = require('../../utils/geoUtils');
+
+// Infer province from district name when DB province field is null
+const HN_DISTRICTS = ['hoàn kiếm', 'ba đình', 'đống đa', 'hai bà trưng', 'tây hồ', 'long biên', 'cầu giấy', 'thanh xuân', 'hoàng mai', 'hà đông', 'nam từ liêm', 'bắc từ liêm', 'gia lâm', 'đông anh', 'sóc sơn', 'thanh trì', 'mê linh', 'sơn tây'];
+const DN_DISTRICTS = ['hải châu', 'thanh khê', 'sơn trà', 'ngũ hành sơn', 'liên chiểu', 'cẩm lệ', 'hòa vang'];
+const CT_DISTRICTS = ['ninh kiều', 'bình thủy', 'cái răng', 'ô môn', 'thốt nốt', 'phong điền', 'cờ đỏ', 'vĩnh thạnh', 'thới lai'];
+
+function inferProvince(district) {
+  if (!district) return 'TP.HCM';
+  const d = district.toLowerCase().trim();
+  if (HN_DISTRICTS.some(n => d.includes(n))) return 'Hà Nội';
+  if (DN_DISTRICTS.some(n => d.includes(n))) return 'Đà Nẵng';
+  if (CT_DISTRICTS.some(n => d.includes(n))) return 'Cần Thơ';
+  return 'TP.HCM';
+}
 const { parsePagination, buildPagination } = require('../../utils/formatUtils');
 
 /**
@@ -178,7 +192,7 @@ class LandService {
     const districts = await this.landRepo.getDistrictSummaries(limit);
     return districts.map((d) => ({
       district: d.district,
-      province: d.province || 'TP.HCM',
+      province: d.province || inferProvince(d.district),
       slug: slugifyAddress(d.district || ''),
       avgPricePerM2: Number(d.avg_price_per_m2) || 0,
       minPricePerM2: Number(d.min_price_per_m2) || 0,

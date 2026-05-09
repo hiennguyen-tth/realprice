@@ -76,10 +76,12 @@ export default function MapPage() {
                 <h2 className="text-sm font-bold text-gray-900">
                   {markers.length > 0
                     ? `${markers.length} vị trí trong khu vực`
-                    : "Di chuyển bản đồ để xem"}
+                    : currentBbox
+                      ? "Không có tin đăng trong khu vực này"
+                      : "Đang tải bản đồ..."}
                 </h2>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  Sắp xếp theo giá thấp nhất
+                  {markers.length > 0 ? "Sắp xếp theo giá thấp nhất" : "Di chuyển bản đồ hoặc dùng nút vị trí để tìm BDS gần bạn"}
                 </p>
               </div>
 
@@ -157,7 +159,11 @@ export default function MapPage() {
           {/* Count */}
           <div className="px-4 pb-1">
             <p className="text-xs font-semibold text-gray-700">
-              {markers.length > 0 ? `${markers.length} vị trí · Giá thấp nhất trước` : "Đang tải..."}
+              {markers.length > 0
+                ? `${markers.length} vị trí · Giá thấp nhất trước`
+                : currentBbox
+                  ? "Không có tin đăng trong khu vực này — thử zoom ra hoặc di chuyển bản đồ"
+                  : "Đang tải..."}
             </p>
           </div>
 
@@ -227,11 +233,10 @@ function DesktopMarkerCard({
   return (
     <article
       onClick={onClick}
-      className={`flex gap-3 p-3 rounded-xl cursor-pointer border transition-all duration-150 ${
-        isSelected
+      className={`flex gap-3 p-3 rounded-xl cursor-pointer border transition-all duration-150 ${isSelected
           ? "border-primary bg-primary/5 shadow-md"
           : "border-transparent hover:border-border hover:bg-gray-50"
-      }`}
+        }`}
     >
       {/* Thumbnail */}
       <div

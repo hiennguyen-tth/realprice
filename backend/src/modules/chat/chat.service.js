@@ -146,44 +146,19 @@ Trả về dưới dạng JSON hợp lệ, không có text thêm. Ví dụ:
         let response = '';
         let action = null;
 
-        // District/location lookup table
-        const DISTRICT_INFO = {
-            'bình thạnh|binh thanh': { name: 'Bình Thạnh', price: '20–50 triệu/m²', desc: 'quận sôi động ở TP.HCM, gần trung tâm, đa dạng chung cư và nhà phố.' },
-            'quận 1|quan 1': { name: 'Quận 1', price: '45–120 triệu/m²', desc: 'trung tâm TP.HCM với giá cao nhất. Lý tưởng cho nhà đầu tư.' },
-            'quận 2|quan 2': { name: 'Quận 2', price: '30–80 triệu/m²', desc: 'khu đô thị mới Thủ Thiêm, nhiều dự án cao cấp.' },
-            'quận 3|quan 3': { name: 'Quận 3', price: '40–100 triệu/m²', desc: 'khu trung tâm sầm uất, giàu tiện ích, nhiều nhà phố và biệt thự.' },
-            'quận 4|quan 4': { name: 'Quận 4', price: '25–60 triệu/m²', desc: 'vị trí gần trung tâm, giá phải chăng hơn, đang phát triển mạnh.' },
-            'quận 5|quan 5': { name: 'Quận 5', price: '30–70 triệu/m²', desc: 'khu phố người Hoa, thương mại sầm uất, nhiều nhà phố kinh doanh.' },
-            'quận 6|quan 6': { name: 'Quận 6', price: '20–45 triệu/m²', desc: 'khu vực đang phát triển, giá còn hợp lý, nhiều chung cư mới.' },
-            'quận 7|quan 7': { name: 'Quận 7', price: '25–60 triệu/m²', desc: 'khu Phú Mỹ Hưng sang trọng, nhiều dự án cao cấp và biệt thự.' },
-            'quận 8|quan 8': { name: 'Quận 8', price: '18–40 triệu/m²', desc: 'giá bình dân, nhiều chung cư giá tốt, đang có nhiều dự án hạ tầng.' },
-            'quận 9|quan 9': { name: 'Quận 9', price: '15–35 triệu/m²', desc: 'khu vực mới phát triển, giá đất nền hợp lý, tiềm năng tăng trưởng tốt.' },
-            'quận 10|quan 10': { name: 'Quận 10', price: '30–70 triệu/m²', desc: 'gần trung tâm, nhiều trường học và bệnh viện, khu dân cư ổn định.' },
-            'quận 11|quan 11': { name: 'Quận 11', price: '25–55 triệu/m²', desc: 'khu vực yên tĩnh, nhiều gia đình sinh sống, giá ổn định.' },
-            'quận 12|quan 12': { name: 'Quận 12', price: '15–35 triệu/m²', desc: 'vùng ven đang đô thị hoá nhanh, giá đất còn mềm, nhiều cơ hội đầu tư.' },
-            'tân bình|tan binh': { name: 'Tân Bình', price: '20–45 triệu/m²', desc: 'khu vực chiến lược gần sân bay, đang phát triển nhanh.' },
-            'tân phú|tan phu': { name: 'Tân Phú', price: '18–40 triệu/m²', desc: 'khu dân cư đông đúc, giá hợp lý, nhiều chung cư và nhà phố.' },
-            'gò vấp|go vap': { name: 'Gò Vấp', price: '18–40 triệu/m²', desc: 'khu vực năng động, giá phải chăng, nhiều tiện ích.' },
-            'phú nhuận|phu nhuan': { name: 'Phú Nhuận', price: '30–65 triệu/m²', desc: 'khu trung tâm yên tĩnh, nhiều biệt thự và nhà phố cao cấp.' },
-            'thủ đức|thu duc': { name: 'Thủ Đức', price: '20–50 triệu/m²', desc: 'thành phố sáng tạo, khu công nghệ cao, nhiều dự án quy mô lớn.' },
-            'hoàn kiếm|hoan kiem': { name: 'Hoàn Kiếm', price: '80–200 triệu/m²', desc: 'trung tâm lịch sử Hà Nội, giá cao nhất thủ đô, lý tưởng cho kinh doanh.' },
-            'ba đình|ba dinh': { name: 'Ba Đình', price: '60–150 triệu/m²', desc: 'khu chính trị trung tâm Hà Nội, nhiều biệt thự và căn hộ cao cấp.' },
-            'đống đa|dong da': { name: 'Đống Đa', price: '40–120 triệu/m²', desc: 'trung tâm văn hoá giáo dục Hà Nội, đông dân, nhiều tiện ích.' },
-            'cầu giấy|cau giay': { name: 'Cầu Giấy', price: '30–80 triệu/m²', desc: 'khu đại học và công nghệ, nhiều chung cư cao cấp, hạ tầng tốt.' },
-            'thanh xuân|thanh xuan': { name: 'Thanh Xuân', price: '35–80 triệu/m²', desc: 'khu dân cư sầm uất phía Nam Hà Nội, nhiều chung cư và nhà phố.' },
-            'tây hồ|tay ho': { name: 'Tây Hồ', price: '50–130 triệu/m²', desc: 'khu biệt thự ven hồ, nhiều người nước ngoài sinh sống, rất sang trọng.' },
-            'hải châu|hai chau': { name: 'Hải Châu', price: '15–40 triệu/m²', desc: 'trung tâm Đà Nẵng, vị trí đắc địa, nhiều nhà phố và chung cư.' },
-            'sơn trà|son tra': { name: 'Sơn Trà', price: '20–55 triệu/m²', desc: 'khu du lịch ven biển Đà Nẵng, tiềm năng nghỉ dưỡng và đầu tư lớn.' },
-            'ngũ hành sơn|ngu hanh son': { name: 'Ngũ Hành Sơn', price: '15–40 triệu/m²', desc: 'khu du lịch nổi tiếng Đà Nẵng, phát triển nhanh, nhiều dự án resort.' },
-        };
-
-        // Check if any district matches
-        for (const [pattern, info] of Object.entries(DISTRICT_INFO)) {
-            if (new RegExp(pattern).test(lower)) {
-                response = `${info.name} là ${info.desc} Giá bất động sản dao động khoảng ${info.price}. Bạn muốn tìm loại hình nào?`;
-                action = { type: 'moveMap', location: info.name };
-                break;
-            }
+        // Detect location queries
+        if (/bình thạnh|binh thanh/.test(lower)) {
+            response = 'Bình Thạnh là một quận sôi động ở TP.HCM. Giá bất động sản hiện tại dao động từ 20-50 triệu/m². Có rất nhiều căn hộ chung cư và nhà phố được rao bán. Bạn muốn tìm loại hình nào?';
+            action = { type: 'moveMap', location: 'bình thạnh' };
+        } else if (/quận 1|quan 1/.test(lower)) {
+            response = 'Quận 1 là trung tâm TP.HCM với giá bất động sản cao nhất, dao động từ 45-120 triệu/m². Đây là khu vực hàng đầu cho các nhà đầu tư. Bạn quan tâm đến những vị trí nào cụ thể?';
+            action = { type: 'moveMap', location: 'quận 1' };
+        } else if (/tân bình|tan binh/.test(lower)) {
+            response = 'Tân Bình là khu vực đang phát triển với giá từ 20-40 triệu/m². Là điểm đến tốt cho những ai tìm kiếm giá hợp lý với vị trí chiến lược.';
+            action = { type: 'moveMap', location: 'tân bình' };
+        } else if (/hoàn kiếm|hoan kiem/.test(lower)) {
+            response = 'Hoàn Kiếm, Hà Nội là khu vực truyền thống với giá cao từ 80-200 triệu/m². Đây là nơi lý tưởng cho những ai tìm kiếm sự ổn định và vị thế.';
+            action = { type: 'moveMap', location: 'hoàn kiếm' };
         }
 
         // Detect price queries
@@ -236,42 +211,14 @@ Trả về dưới dạng JSON hợp lệ, không có text thêm. Ví dụ:
         const lower = message.toLowerCase();
         const filters = {};
 
-        // District patterns → canonical Vietnamese name
-        const DISTRICT_PATTERNS = [
-            [/bình thạnh|binh thanh/i, 'Bình Thạnh'],
-            [/quận 1\b|quan 1\b/i, 'Quận 1'],
-            [/quận 2\b|quan 2\b/i, 'Quận 2'],
-            [/quận 3\b|quan 3\b/i, 'Quận 3'],
-            [/quận 4\b|quan 4\b/i, 'Quận 4'],
-            [/quận 5\b|quan 5\b/i, 'Quận 5'],
-            [/quận 6\b|quan 6\b/i, 'Quận 6'],
-            [/quận 7\b|quan 7\b/i, 'Quận 7'],
-            [/quận 8\b|quan 8\b/i, 'Quận 8'],
-            [/quận 9\b|quan 9\b/i, 'Quận 9'],
-            [/quận 10\b|quan 10\b/i, 'Quận 10'],
-            [/quận 11\b|quan 11\b/i, 'Quận 11'],
-            [/quận 12\b|quan 12\b/i, 'Quận 12'],
-            [/tân bình|tan binh/i, 'Tân Bình'],
-            [/tân phú|tan phu/i, 'Tân Phú'],
-            [/gò vấp|go vap/i, 'Gò Vấp'],
-            [/phú nhuận|phu nhuan/i, 'Phú Nhuận'],
-            [/thủ đức|thu duc/i, 'Thủ Đức'],
-            [/hoàn kiếm|hoan kiem/i, 'Hoàn Kiếm'],
-            [/ba đình|ba dinh/i, 'Ba Đình'],
-            [/đống đa|dong da/i, 'Đống Đa'],
-            [/cầu giấy|cau giay/i, 'Cầu Giấy'],
-            [/thanh xuân|thanh xuan/i, 'Thanh Xuân'],
-            [/tây hồ|tay ho/i, 'Tây Hồ'],
-            [/hải châu|hai chau/i, 'Hải Châu'],
-            [/sơn trà|son tra/i, 'Sơn Trà'],
-            [/ngũ hành sơn|ngu hanh son/i, 'Ngũ Hành Sơn'],
-        ];
-
-        for (const [pattern, name] of DISTRICT_PATTERNS) {
-            if (pattern.test(message)) {
-                filters.district = name;
-                break;
-            }
+        // Extract district
+        const districtMatch = message.match(/(bình thạnh|binh thanh|quận 1|quan 1|tân bình|tan binh|hoàn kiếm|hoan kiem)/i);
+        if (districtMatch) {
+            const districtName = districtMatch[1].replace(/[ạỀàáảãâ]/g, (c) => {
+                const map = { 'ạ': 'a', 'ề': 'e', 'à': 'a', 'á': 'a', 'ả': 'a', 'ã': 'a', 'â': 'a' };
+                return map[c] || c;
+            });
+            filters.district = districtName;
         }
 
         // Extract property type

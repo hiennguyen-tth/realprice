@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { PostListingWizard } from "@/components/postListing/PostListingWizard";
 
 export const metadata: Metadata = {
@@ -8,6 +10,10 @@ export const metadata: Metadata = {
   keywords: "đăng tin bất động sản, đăng tin bán nhà, đăng tin bán đất, sale nhà, sale đất, quảng cáo bất động sản, tiếp cận người mua",
 };
 
-export default function PostListingPage() {
+export default async function PostListingPage() {
+  const session = await getServerSession();
+  if (!session) {
+    redirect("/dang-nhap?redirect=/dang-tin");
+  }
   return <PostListingWizard />;
 }

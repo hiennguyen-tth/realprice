@@ -4,11 +4,11 @@ import { getDistrictSummaries } from "@/lib/api";
 import { formatPricePerM2 } from "@/lib/formatters";
 
 export const metadata: Metadata = {
-  title: "Khu vực bất động sản — RealPrice",
+  title: "Khu vực bất động sản",
   description: "Xem giá bất động sản theo khu vực, quận huyện tại TP.HCM, Hà Nội, Đà Nẵng. Heatmap giá, định giá ngân hàng.",
   keywords: "khu vực bất động sản, giá đất quận, heatmap giá, định giá ngân hàng, bds TP.HCM, bds Hà Nội, bds Đà Nẵng, sale bất động sản",
   openGraph: {
-    title: "Khu vực bất động sản — RealPrice",
+    title: "Khu vực bất động sản | RealPrice",
     description: "Xem giá bất động sản theo quận huyện, heatmap khu vực, định giá ngân hàng và tin bán nhà đất.",
     type: "website",
   },
