@@ -69,6 +69,7 @@ export function ListingDetailView({ listing }: ListingDetailViewProps) {
                 fill
                 className="object-cover"
                 priority
+                unoptimized={images[activeImageIdx].startsWith('https://cdn.chotot.com') || images[activeImageIdx].startsWith('https://static.chotot.com')}
               />
             </div>
             {images.length > 1 && (
@@ -77,13 +78,14 @@ export function ListingDetailView({ listing }: ListingDetailViewProps) {
                   <button
                     key={i}
                     onClick={() => setActiveImageIdx(i)}
-                    className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                      i === activeImageIdx
-                        ? "border-primary"
-                        : "border-transparent opacity-60 hover:opacity-100"
-                    }`}
+                    className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${i === activeImageIdx
+                      ? "border-primary"
+                      : "border-transparent opacity-60 hover:opacity-100"
+                      }`}
                   >
-                    <Image src={img} alt="" width={64} height={64} className="w-full h-full object-cover" />
+                    <Image src={img} alt="" width={64} height={64} className="w-full h-full object-cover"
+                      unoptimized={img.startsWith('https://cdn.chotot.com') || img.startsWith('https://static.chotot.com')}
+                    />
                   </button>
                 ))}
               </div>
