@@ -135,22 +135,18 @@ class ListingRepository extends BaseRepository {
   async findByIdWithLand(id) {
     const { rows } = await this._query(
       `SELECT li.*,
-              ST_X(li.location::geometry) AS lng,
-              ST_Y(li.location::geometry) AS lat,
-              l.address      AS land_address,
-              l.district     AS district,
-              l.ward         AS ward,
-              l.province     AS province,
-              l.slug         AS land_slug,
-              l.lat_coord    AS land_lat,
-              l.lng_coord    AS land_lng,
-              l.area_m2      AS land_area_m2,
-              l.land_type    AS land_type,
-              l.legal_status AS legal_status,
-              l.frontage_m   AS frontage_m
-       FROM listings li
-       LEFT JOIN lands l ON l.id = li.land_id
-       WHERE li.id = $1`,
+            ST_X(li.location::geometry) AS lng,
+            ST_Y(li.location::geometry) AS lat,
+            l.address      AS land_address,
+            l.district     AS district,
+            l.ward         AS ward,
+            l.province     AS province,
+            l.slug         AS land_slug,
+            ST_Y(l.location::geometry) AS land_lat,
+            ST_X(l.location::geometry) AS land_lng
+     FROM listings li
+     LEFT JOIN lands l ON l.id = li.land_id
+     WHERE li.id = $1`,
       [id]
     );
     return rows[0] || null;
