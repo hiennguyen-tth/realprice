@@ -90,18 +90,21 @@ function getListingType(ad) {
 // ── Extract images từ ad (list hoặc detail) ──────────────────────────────
 
 function extractImages(ad) {
-  // Từ detail API: ad.images là array of { name, ... }
+  // Detail API: ad.images là array of objects
   if (Array.isArray(ad.images) && ad.images.length > 0) {
     return ad.images.map(img => {
-      if (typeof img === 'string') return img;
-      // Chotot image URL pattern
+      if (typeof img === 'string') {
+        return img.startsWith('http') ? img : `https://static.chotot.com/storage/chotot-realestate/c2c/original/${img}`;
+      }
       const name = img.name || img.url || img.src || '';
+      if (!name) return null;
       return name.startsWith('http')
         ? name
-        : `https://static.chotot.com/storage/chotot-kinhnghiem/c2c/picture/${name}`;
+        : `https://static.chotot.com/storage/chotot-realestate/c2c/original/${name}`;
     }).filter(Boolean);
   }
-  // Từ list API: thumbnail
+
+  // List API: thumbnail
   if (ad.thumbnail) return [ad.thumbnail];
   return [];
 }
@@ -143,16 +146,19 @@ async function insertListing(client, ad, detail) {
     if (existing.rows.length > 0) {
       // ── Update images/description nếu record cũ bị thiếu ──
       await client.query(`
-        UPDATE listings
-        SET
-          images      = CASE WHEN images = '{}' THEN $1 ELSE images END,
-          description = CASE WHEN description IS NULL THEN $2 ELSE description END,
-          source_url  = CASE WHEN source_url IS NULL THEN $3 ELSE source_url END,
-          source      = CASE WHEN source IS NULL THEN 'nhatot' ELSE source END,
-          source_id   = CASE WHEN source_id IS NULL THEN $4 ELSE source_id END,
-          updated_at  = NOW()
-        WHERE source_hash = $5
-      `, [images, description, sourceUrl, sourceId, sourceHash]);
+  UPDATE listings
+  SET
+    images      = CASE 
+                    WHEN images IS NULL OR images = '{}' OR array_length(images, 1) IS NULL 
+                    THEN $1 ELSE images 
+                  END,
+    description = CASE WHEN description IS NULL THEN $2 ELSE description END,
+    source_url  = CASE WHEN source_url IS NULL THEN $3 ELSE source_url END,
+    source      = CASE WHEN source IS NULL THEN 'nhatot' ELSE source END,
+    source_id   = CASE WHEN source_id IS NULL THEN $4 ELSE source_id END,
+    updated_at  = NOW()
+  WHERE source_hash = $5
+`, [images, description, sourceUrl, sourceId, sourceHash]);
       return false; // không tính là inserted mới
     }
 
@@ -213,7 +219,7 @@ async function main() {
   let totalUpdated = 0;
   let totalFailed = 0;
   let page = 1;
-  const MAX_PAGES = 50;
+  const MAX_PAGES = 500;
 
   console.log('🚀 Bắt đầu crawl toàn quốc từ Chotot (có ảnh + mô tả)...');
 

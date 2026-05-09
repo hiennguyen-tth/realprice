@@ -34,6 +34,16 @@ const nextConfig = {
         hostname: "via.placeholder.com",
         pathname: "/**",
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn.chotot.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'static.chotot.com',
+        pathname: '/**',
+      },
     ],
   },
 
