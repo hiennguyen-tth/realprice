@@ -74,15 +74,12 @@ router.get('/', cacheMiddleware(60), async (req, res, next) => {
           params.push(mapped);
           idx += 1;
         } else if (propertyTypeMap[normalizedListingType]) {
-          // Filter by property_type column if exists, otherwise fallback to text search
           whereClause += ` AND (
-            li.property_type = $${idx}
-            OR li.title ILIKE $${idx + 1}
-            OR li.description ILIKE $${idx + 1}
+            li.title ILIKE $${idx}
+            OR li.description ILIKE $${idx}
           )`;
-          params.push(normalizedListingType);
           params.push(`%${propertyTypeMap[normalizedListingType]}%`);
-          idx += 2;
+          idx += 1;
         }
       }
 
