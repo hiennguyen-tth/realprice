@@ -96,7 +96,10 @@ function normalizeListing(row: any): Listing {
     listingType: (row.listing_type ?? row.listingType ?? "sale") as Listing["listingType"],
     status: (row.status ?? "active") as Listing["status"],
     images,
-    address: row.address ?? "",
+    address: row.address ?? row.land_address ?? "",
+    district: row.district ?? row.land_district ?? "",
+    ward: row.ward ?? row.land_ward ?? "",
+    province: row.province ?? "",
     location: row.lat != null && row.lng != null
       ? { latitude: Number(row.lat), longitude: Number(row.lng) }
       : row.location,

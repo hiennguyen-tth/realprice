@@ -88,6 +88,9 @@ export interface Listing {
   status: ListingStatus;
   images: string[];
   address: string;
+  district?: string;
+  ward?: string;
+  province?: string;
   location?: GeoPoint;
   contactName?: string;
   contactPhone?: string;
@@ -289,7 +292,7 @@ export interface ListingFilters {
   maxArea?: number;
   district?: string;
   ward?: string;
-  sortBy?: "price_asc" | "price_desc" | "area_asc" | "newest";
+  sortBy?: "price_asc" | "price_desc" | "area_asc" | "area_desc" | "newest";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

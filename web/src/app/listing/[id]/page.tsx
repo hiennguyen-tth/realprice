@@ -1,6 +1,5 @@
 "use client";
 
-import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getListingById } from "@/lib/api";
 import { ListingDetailView } from "@/components/listing/ListingDetailView";
@@ -9,11 +8,11 @@ import { CompareTray } from "@/components/comparison/CompareTray";
 import Link from "next/link";
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default function ListingPage({ params }: Props) {
-  const { id } = use(params);
+  const { id } = (params);
 
   const { data: listing, isLoading, error } = useQuery({
     queryKey: ["listing", id],
@@ -54,7 +53,11 @@ export default function ListingPage({ params }: Props) {
         {(listing.district || listing.land?.district) && (
           <>
             <Link
-              href={`/khu-vuc/${encodeURIComponent((listing.district || listing.land?.district || '').toLowerCase().replace(/\s+/g, "-"))}`}
+              href={`/khu-vuc/${encodeURIComponent(
+                (listing.district || listing.land?.district || '')
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")
+              )}`}
               className="hover:text-primary transition-colors"
             >
               {listing.district || listing.land?.district}

@@ -1,6 +1,5 @@
 "use client";
 
-import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -11,11 +10,10 @@ import { CompareTray } from "@/components/comparison/CompareTray";
 import { Skeleton } from "@/components/common/Skeleton";
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
-
 export default function ComparisonResultPage({ params }: Props) {
-  const { id } = use(params);
+  const { id } = (params);
   const router = useRouter();
 
   const { data: comparison, isLoading, error } = useQuery({
