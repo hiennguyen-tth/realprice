@@ -69,28 +69,37 @@ function analyzeComparison(items) {
     return { message: 'Không có bất động sản để so sánh' };
   }
 
-  const prices = items.map((i) => i.listing.price);
-  const perM2s = items.map((i) => i.listing.price_per_m2).filter(Boolean);
-  const areas = items.map((i) => i.listing.area || i.listing.area_m2).filter(Boolean);
+  // ✅ Thêm initial value cho tất cả reduce
+  const cheapest = items.reduce((a, b) =>
+    (a.listing.price <= b.listing.price ? a : b), items[0]);
 
-  const cheapest = items.reduce((a, b) => (a.listing.price <= b.listing.price ? a : b));
-  const bestPerM2 = perM2s.length
-    ? items.filter((i) => i.listing.price_per_m2).reduce((a, b) =>
-      a.listing.price_per_m2 <= b.listing.price_per_m2 ? a : b)
+  const validPerM2 = items.filter((i) => i.listing.price_per_m2);
+  const bestPerM2 = validPerM2.length
+    ? validPerM2.reduce((a, b) =>
+      parseFloat(a.listing.price_per_m2) <= parseFloat(b.listing.price_per_m2) ? a : b, validPerM2[0])
     : cheapest;
-  const largest = areas.length
-    ? items.filter((i) => i.listing.area_m2).reduce((a, b) =>
-      (parseFloat(a.listing.area || a.listing.area_m2) >= parseFloat(b.listing.area || b.listing.area_m2)) ? a : b)
-    : null;
-  const bestValue = items.reduce((a, b) => (a.score >= b.score ? a : b));
 
-  const priceMin = Math.min(...prices);
-  const priceMax = Math.max(...prices);
+  const validArea = items.filter((i) => i.listing.area || i.listing.area_m2);
+  const largest = validArea.length
+    ? validArea.reduce((a, b) =>
+      parseFloat(a.listing.area || a.listing.area_m2) >= parseFloat(b.listing.area || b.listing.area_m2) ? a : b, validArea[0])
+    : null;
+
+  const bestValue = items.reduce((a, b) =>
+    (a.score >= b.score ? a : b), items[0]);
+
+  const prices = items.map((i) => parseFloat(i.listing.price)).filter(Boolean);
+  const perM2s = items.map((i) => parseFloat(i.listing.price_per_m2)).filter(Boolean);
+
+  const priceMin = prices.length ? Math.min(...prices) : null;
+  const priceMax = prices.length ? Math.max(...prices) : null;
   const perM2Min = perM2s.length ? Math.min(...perM2s) : null;
   const perM2Max = perM2s.length ? Math.max(...perM2s) : null;
 
   let recommendation;
-  if (cheapest.listing.id === bestValue.listing.id) {
+  if (items.length === 1) {
+    recommendation = `"${cheapest.listing.title}" là bất động sản duy nhất trong so sánh này.`;
+  } else if (cheapest.listing.id === bestValue.listing.id) {
     recommendation = `"${cheapest.listing.title}" vừa có giá thấp nhất vừa đạt điểm giá trị tổng thể cao nhất — rất đáng cân nhắc.`;
   } else {
     recommendation =
@@ -106,7 +115,9 @@ function analyzeComparison(items) {
     bestPerM2Listing: { id: bestPerM2.listing.id, title: bestPerM2.listing.title, price_per_m2: bestPerM2.listing.price_per_m2 },
 
     largestListingId: largest?.listing.id ?? null,
-    largestListing: largest ? { id: largest.listing.id, title: largest.listing.title, area_m2: largest.listing.area || largest.listing.area_m2 } : null,
+    largestListing: largest
+      ? { id: largest.listing.id, title: largest.listing.title, area_m2: largest.listing.area || largest.listing.area_m2 }
+      : null,
 
     bestValueListingId: bestValue.listing.id,
     priceRange: { min: priceMin, max: priceMax },
