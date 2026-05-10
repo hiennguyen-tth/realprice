@@ -98,6 +98,8 @@ export interface Listing {
   land?: Land;
   createdAt: string;
   updatedAt: string;
+  sourceUrl?: string | null;
+  source?: string | null;
 }
 
 export interface CreateListingPayload {
