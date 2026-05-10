@@ -7,35 +7,38 @@ interface AnalysisSummaryProps {
 }
 
 export function AnalysisSummary({ items, analysis }: AnalysisSummaryProps) {
-  const cheapest = items[analysis.cheapestIndex]?.listing;
-  const bestValue = items[analysis.bestValueIndex]?.listing;
-  const largest = items[analysis.largestAreaIndex]?.listing;
+  // const cheapest = items[analysis.cheapestIndex]?.listing;
+  // const bestValue = items[analysis.bestValueIndex]?.listing;
+  // const largest = items[analysis.largestAreaIndex]?.listing;
+
+  // Đọc trực tiếp từ object thay vì dùng index
+  const cheapest = analysis.cheapestListing;
+  const bestPerM2 = analysis.bestPerM2Listing;
+  const largest = analysis.largestListing;
+
 
   const cards = [
     {
       icon: "💰",
       title: "Giá rẻ nhất",
-      listing: cheapest,
       highlight: cheapest ? formatShortPrice(cheapest.price) : "—",
-      sub: cheapest ? cheapest.address : "",
+      sub: cheapest ? cheapest.title : "",
       color: "bg-green-50 border-green-200",
       textColor: "text-green-700",
     },
     {
       icon: "🏆",
       title: "Giá/m² tốt nhất",
-      listing: bestValue,
-      highlight: bestValue ? formatPricePerM2(bestValue.pricePerM2) : "—",
-      sub: bestValue ? bestValue.address : "",
+      highlight: bestPerM2 ? formatPricePerM2(bestPerM2.price_per_m2) : "—",
+      sub: bestPerM2 ? bestPerM2.title : "",
       color: "bg-primary/5 border-primary/20",
       textColor: "text-primary",
     },
     {
       icon: "📐",
       title: "Diện tích lớn nhất",
-      listing: largest,
-      highlight: largest ? formatArea(largest.area) : "—",
-      sub: largest ? largest.address : "",
+      highlight: largest ? formatArea(largest.area_m2) : "—",
+      sub: largest ? largest.title : "",
       color: "bg-blue-50 border-blue-200",
       textColor: "text-blue-700",
     },
