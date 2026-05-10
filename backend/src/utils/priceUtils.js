@@ -71,7 +71,7 @@ function analyzeComparison(items) {
 
   const prices = items.map((i) => i.listing.price);
   const perM2s = items.map((i) => i.listing.price_per_m2).filter(Boolean);
-  const areas = items.map((i) => i.listing.area_m2).filter(Boolean);
+  const areas = items.map((i) => i.listing.area || i.listing.area_m2).filter(Boolean);
 
   const cheapest = items.reduce((a, b) => (a.listing.price <= b.listing.price ? a : b));
   const bestPerM2 = perM2s.length
@@ -80,7 +80,7 @@ function analyzeComparison(items) {
     : cheapest;
   const largest = areas.length
     ? items.filter((i) => i.listing.area_m2).reduce((a, b) =>
-      a.listing.area_m2 >= b.listing.area_m2 ? a : b)
+      (parseFloat(a.listing.area || a.listing.area_m2) >= parseFloat(b.listing.area || b.listing.area_m2)) ? a : b)
     : null;
   const bestValue = items.reduce((a, b) => (a.score >= b.score ? a : b));
 
@@ -106,7 +106,7 @@ function analyzeComparison(items) {
     bestPerM2Listing: { id: bestPerM2.listing.id, title: bestPerM2.listing.title, price_per_m2: bestPerM2.listing.price_per_m2 },
 
     largestListingId: largest?.listing.id ?? null,
-    largestListing: largest ? { id: largest.listing.id, title: largest.listing.title, area_m2: largest.listing.area_m2 } : null,
+    largestListing: largest ? { id: largest.listing.id, title: largest.listing.title, area_m2: largest.listing.area || largest.listing.area_m2 } : null,
 
     bestValueListingId: bestValue.listing.id,
     priceRange: { min: priceMin, max: priceMax },

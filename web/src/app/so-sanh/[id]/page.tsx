@@ -119,7 +119,7 @@ export default function ComparisonResultPage({ params }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {comparison.items.map((item, idx) => (
             <div
-              key={item.listingId}
+              key={item.listing.id}
               className="bg-white rounded-2xl border border-border p-4 text-center"
             >
               <p className="text-xs text-gray-500 mb-1">Tin #{idx + 1}</p>
@@ -135,7 +135,7 @@ export default function ComparisonResultPage({ params }: Props) {
                 </a>
               )}
               <Link
-                href={`/listing/${item.listingId}`}
+                href={`/listing/${item.listing.id}`}
                 className="block mt-2 text-xs text-primary hover:underline"
               >
                 Xem chi tiết
