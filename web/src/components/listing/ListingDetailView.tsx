@@ -221,7 +221,7 @@ export function ListingDetailView({ listing }: ListingDetailViewProps) {
               </form>
             )}
 
-            {listing.contactPhone && (
+            {listing.contactPhone ? (
               <a
                 href={`tel:${listing.contactPhone}`}
                 className="flex items-center justify-center gap-2 mt-3 w-full border-2 border-primary text-primary hover:bg-primary/5 py-2.5 rounded-xl font-semibold text-sm transition-colors"
@@ -232,6 +232,23 @@ export function ListingDetailView({ listing }: ListingDetailViewProps) {
                 </svg>
                 Gọi ngay
               </a>
+            ) : listing.sourceUrl ? (
+              <a
+                href={listing.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 mt-3 w-full border-2 border-gray-300 text-gray-600 hover:border-primary hover:text-primary py-2.5 rounded-xl font-semibold text-sm transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Xem SĐT trên {listing.source === 'nhatot' ? 'Chợ Tốt' : 'trang gốc'}
+              </a>
+            ) : (
+              <p className="mt-3 text-xs text-gray-400 text-center">
+                Không có thông tin liên hệ
+              </p>
             )}
           </div>
         </div>
