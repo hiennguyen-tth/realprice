@@ -66,12 +66,22 @@ function calcListingScore(listing, land, districtIndex) {
  */
 function analyzeComparison(items) {
   if (!items || items.length === 0) {
-    return { message: 'No listings to compare' };
+    return { message: 'Không có bất động sản để so sánh' };
   }
 
-  const prices    = items.map((i) => i.listing.price);
-  const perM2s    = items.map((i) => i.listing.price_per_m2).filter(Boolean);
-  const cheapest  = items.reduce((a, b) => (a.listing.price <= b.listing.price ? a : b));
+  const prices = items.map((i) => i.listing.price);
+  const perM2s = items.map((i) => i.listing.price_per_m2).filter(Boolean);
+  const areas = items.map((i) => i.listing.area_m2).filter(Boolean);
+
+  const cheapest = items.reduce((a, b) => (a.listing.price <= b.listing.price ? a : b));
+  const bestPerM2 = perM2s.length
+    ? items.filter((i) => i.listing.price_per_m2).reduce((a, b) =>
+      a.listing.price_per_m2 <= b.listing.price_per_m2 ? a : b)
+    : cheapest;
+  const largest = areas.length
+    ? items.filter((i) => i.listing.area_m2).reduce((a, b) =>
+      a.listing.area_m2 >= b.listing.area_m2 ? a : b)
+    : null;
   const bestValue = items.reduce((a, b) => (a.score >= b.score ? a : b));
 
   const priceMin = Math.min(...prices);
@@ -81,15 +91,23 @@ function analyzeComparison(items) {
 
   let recommendation;
   if (cheapest.listing.id === bestValue.listing.id) {
-    recommendation = `Listing "${cheapest.listing.title}" offers both the lowest price and the best overall value score — highly recommended.`;
+    recommendation = `"${cheapest.listing.title}" vừa có giá thấp nhất vừa đạt điểm giá trị tổng thể cao nhất — rất đáng cân nhắc.`;
   } else {
     recommendation =
-      `"${cheapest.listing.title}" is the most affordable. ` +
-      `"${bestValue.listing.title}" scores highest for value (legal status, location, market price).`;
+      `"${cheapest.listing.title}" có giá tốt nhất. ` +
+      `"${bestValue.listing.title}" đạt điểm giá trị cao nhất (pháp lý, vị trí, giá thị trường).`;
   }
 
   return {
     cheapestListingId: cheapest.listing.id,
+    cheapestListing: { id: cheapest.listing.id, title: cheapest.listing.title, price: cheapest.listing.price },
+
+    bestPerM2ListingId: bestPerM2.listing.id,
+    bestPerM2Listing: { id: bestPerM2.listing.id, title: bestPerM2.listing.title, price_per_m2: bestPerM2.listing.price_per_m2 },
+
+    largestListingId: largest?.listing.id ?? null,
+    largestListing: largest ? { id: largest.listing.id, title: largest.listing.title, area_m2: largest.listing.area_m2 } : null,
+
     bestValueListingId: bestValue.listing.id,
     priceRange: { min: priceMin, max: priceMax },
     perM2Range: { min: perM2Min, max: perM2Max },
@@ -109,14 +127,14 @@ function analyzeComparison(items) {
  */
 function calcBankValuation(areaM2, bankValuations) {
   return bankValuations.map((bv) => ({
-    bankName:       bv.bank_name,
+    bankName: bv.bank_name,
     valuationPerM2: bv.valuation_per_m2,
     totalValuation: bv.valuation_per_m2 * areaM2,
-    ltvRatio:       parseFloat(bv.ltv_ratio),
-    maxLoanPerM2:   bv.max_loan_per_m2,
-    maxLoan:        bv.max_loan_per_m2 * areaM2,
-    effectiveFrom:  bv.effective_from,
-    effectiveTo:    bv.effective_to,
+    ltvRatio: parseFloat(bv.ltv_ratio),
+    maxLoanPerM2: bv.max_loan_per_m2,
+    maxLoan: bv.max_loan_per_m2 * areaM2,
+    effectiveFrom: bv.effective_from,
+    effectiveTo: bv.effective_to,
   }));
 }
 
@@ -131,8 +149,8 @@ function percentile(sorted, p) {
     return 0;
   }
   const idx = (sorted.length - 1) * p;
-  const lo  = Math.floor(idx);
-  const hi  = Math.ceil(idx);
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
   return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
@@ -146,10 +164,10 @@ function aggregatePrices(values) {
   if (!valid.length) {
     return { avg: 0, median: 0, min: 0, max: 0, count: 0 };
   }
-  const avg    = Math.round(valid.reduce((s, v) => s + v, 0) / valid.length);
+  const avg = Math.round(valid.reduce((s, v) => s + v, 0) / valid.length);
   const median = Math.round(percentile(valid, 0.5));
-  const min    = valid[0];
-  const max    = valid[valid.length - 1];
+  const min = valid[0];
+  const max = valid[valid.length - 1];
   return { avg, median, min, max, count: valid.length };
 }
 
