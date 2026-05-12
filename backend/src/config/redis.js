@@ -14,8 +14,6 @@ async function getRedisClient() {
     return redisClient;
   }
 
-  console.log('[Redis] Config:', config.redis);
-
   const clientOptions = {
     socket: {
       host: config.redis.host,
@@ -35,12 +33,6 @@ async function getRedisClient() {
   // }
 
   redisClient = createClient(clientOptions);
-
-  // Set password if provided
-  if (config.redis.password) {
-    console.log('[Redis] Setting password after client creation:', typeof config.redis.password, config.redis.password);
-    // Try setting password after creation
-  }
 
   redisClient.on('error', (err) => {
     console.error('[Redis] Client error:', err.message);

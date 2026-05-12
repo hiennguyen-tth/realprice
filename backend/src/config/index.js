@@ -92,8 +92,4 @@ const config = {
   },
 };
 
-console.log('In config - DB_USER:', process.env.DB_USER);
-console.log('In config - DB_PASSWORD:', process.env.DB_PASSWORD);
-console.log('[Config] Redis config:', config.redis);
-console.log('[Config] DB config:', config.db);
 module.exports = config;
