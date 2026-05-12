@@ -9,13 +9,13 @@ const axios = require('axios');
  */
 class ChatService {
     constructor() {
-        this.apiKey = process.env.OPENAI_API_KEY;
-        this.model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
-        this.apiBase = 'https://api.openai.com/v1';
+        this.apiKey = process.env.GEMINI_API_KEY;
+        this.model = process.env.GEMINI_MODEL || 'gemini-pro';
+        this.apiBase = 'https://generativelanguage.googleapis.com/v1beta/models';
         this.useMockMode = !this.apiKey;
 
         if (this.useMockMode) {
-            console.warn('[ChatService] OPENAI_API_KEY not set — using mock mode for testing');
+            console.warn('[ChatService] GEMINI_API_KEY not set — using mock mode for testing');
         }
     }
 
