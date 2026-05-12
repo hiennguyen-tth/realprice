@@ -2,7 +2,7 @@
 
 const { Router } = require('express');
 const ChatService = require('./chat.service');
-const { authenticate } = require('../../middleware/auth');
+const { optionalAuthenticate } = require('../../middleware/auth');
 
 const chatService = new ChatService();
 const router = Router();
@@ -11,7 +11,7 @@ const router = Router();
  * POST /api/chat
  * Send a user message and get AI response
  */
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', optionalAuthenticate, async (req, res, next) => {
     try {
         const { message, context } = req.body;
         const userId = req.user?.id;
@@ -35,7 +35,7 @@ router.post('/', authenticate, async (req, res, next) => {
  * POST /api/chat/search
  * Parse user intent to extract search filters
  */
-router.post('/search', authenticate, async (req, res, next) => {
+router.post('/search', optionalAuthenticate, async (req, res, next) => {
     try {
         const { message } = req.body;
 

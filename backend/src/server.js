@@ -1,11 +1,5 @@
 'use strict';
 
-const result = require('dotenv').config();
-console.log('Dotenv result:', result);
-
-console.log('After dotenv - DB_USER:', process.env.DB_USER);
-console.log('After dotenv - DB_PASSWORD:', process.env.DB_PASSWORD);
-
 const http = require('http');
 const app = require('./app');
 const config = require('./config');
