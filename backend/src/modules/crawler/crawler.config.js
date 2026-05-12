@@ -4,9 +4,13 @@ const crawlerConfig = {
   enabled:        process.env.CRAWLER_ENABLED !== 'false',
   cronSchedule:   process.env.CRAWLER_CRON    || '0 3 * * *',
   requestDelayMs: parseInt(process.env.CRAWLER_DELAY_MS, 10) || 2000,
-  maxPagesPerRun: parseInt(process.env.CRAWLER_MAX_PAGES,  10) || 5,
+  maxPagesPerRun: parseInt(process.env.CRAWLER_MAX_PAGES,  10) || 50,
   userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
 
+  // ── Crawl mode: 'all' = tất cả tỉnh, 'specific' = locations cụ thể ──
+  crawlMode: process.env.CRAWLER_MODE || 'all',
+
+  // Dùng khi crawlMode='specific'
   locations: [
     { district: 'Quận 1',        province: 'TP.HCM', regionV2: 13000, areaV2: 13101 },
     { district: 'Quận 3',        province: 'TP.HCM', regionV2: 13000, areaV2: 13103 },

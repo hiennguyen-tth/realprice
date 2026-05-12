@@ -14,6 +14,11 @@ class ChatService {
         this.apiBase = 'https://generativelanguage.googleapis.com/v1beta/models';
         this.useMockMode = !this.apiKey;
 
+        // DEBUG — xóa sau khi fix xong
+        console.log('[ChatService] apiKey:', this.apiKey ? `...${this.apiKey.slice(-6)}` : 'MISSING');
+        console.log('[ChatService] model:', this.model);
+        console.log('[ChatService] mockMode:', this.useMockMode);
+
         if (this.useMockMode) {
             console.warn('[ChatService] GEMINI_API_KEY not set — using mock mode for testing');
         }
@@ -21,25 +26,35 @@ class ChatService {
 
     // Hàm helper dùng chung cho cả chat() và parseFilters()
     async _callGemini(systemPrompt, userMessage, maxTokens = 500, temperature = 0.7) {
-        const response = await axios.post(
-            `${this.apiBase}/${this.model}:generateContent?key=${this.apiKey}`,
-            {
-                contents: [
-                    { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userMessage}` }] }
-                ],
-                generationConfig: {
-                    temperature,
-                    maxOutputTokens: maxTokens,
-                },
-            },
-            {
-                headers: { 'Content-Type': 'application/json' },
-                // Không có Authorization Bearer — key nằm trong URL
-                timeout: 30000,
-            }
-        );
 
-        return response.data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+        const url = `${this.apiBase}/${this.model}:generateContent?key=${this.apiKey}`;
+        console.log('[ChatService] Calling URL:', url.replace(this.apiKey, '***'));
+
+        try {
+            const response = await axios.post(url,
+                {
+                    contents: [
+                        { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userMessage}` }] }
+                    ],
+                    generationConfig: {
+                        temperature,
+                        maxOutputTokens: maxTokens,
+                    },
+                },
+                {
+                    headers: { 'Content-Type': 'application/json' },
+                    // Không có Authorization Bearer — key nằm trong URL
+                    timeout: 30000,
+                }
+            );
+
+            return response.data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+        } catch (err) {
+            console.error('[ChatService] Raw error:', err.response?.data);
+            throw err;
+        }
+
+
     }
 
     /**
