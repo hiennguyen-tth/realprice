@@ -10,13 +10,36 @@ const axios = require('axios');
 class ChatService {
     constructor() {
         this.apiKey = process.env.GEMINI_API_KEY;
-        this.model = process.env.GEMINI_MODEL || 'gemini-pro';
+        this.model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
         this.apiBase = 'https://generativelanguage.googleapis.com/v1beta/models';
         this.useMockMode = !this.apiKey;
 
         if (this.useMockMode) {
             console.warn('[ChatService] GEMINI_API_KEY not set — using mock mode for testing');
         }
+    }
+
+    // Hàm helper dùng chung cho cả chat() và parseFilters()
+    async _callGemini(systemPrompt, userMessage, maxTokens = 500, temperature = 0.7) {
+        const response = await axios.post(
+            `${this.apiBase}/${this.model}:generateContent?key=${this.apiKey}`,
+            {
+                contents: [
+                    { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userMessage}` }] }
+                ],
+                generationConfig: {
+                    temperature,
+                    maxOutputTokens: maxTokens,
+                },
+            },
+            {
+                headers: { 'Content-Type': 'application/json' },
+                // Không có Authorization Bearer — key nằm trong URL
+                timeout: 30000,
+            }
+        );
+
+        return response.data.candidates?.[0]?.content?.parts?.[0]?.text || null;
     }
 
     /**
@@ -36,37 +59,13 @@ class ChatService {
         const userMessage = this._normalizeMessage(message);
 
         try {
-            const response = await axios.post(
-                `${this.apiBase}/chat/completions`,
-                {
-                    model: this.model,
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userMessage },
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 500,
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.apiKey}`,
-                        'Content-Type': 'application/json',
-                    },
-                    timeout: 30000,
-                }
-            );
 
-            const aiMessage = response.data.choices?.[0]?.message?.content || 'Không thể xử lý yêu cầu.';
+            const aiMessage = await this._callGemini(systemPrompt, userMessage, 500, 0.7)
+                || 'Không thể xử lý yêu cầu.';
 
-            // Parse response for actionable intents
-            const action = this._parseAction(aiMessage, context);
-
-            return {
-                response: aiMessage,
-                action,
-            };
+            return { response: aiMessage, action: this._parseAction(aiMessage, context) };
         } catch (error) {
-            console.error('[ChatService] OpenAI API error:', error.message);
+            console.error('[ChatService] Gemini API error:', error.message);
             return {
                 response: 'Xin lỗi, đã xảy ra lỗi. Vui lòng thử lại.',
                 action: null,
@@ -102,32 +101,10 @@ Trả về dưới dạng JSON hợp lệ, không có text thêm. Ví dụ:
 {"district": "Bình Thạnh", "minPrice": 1000000000, "maxPrice": 5000000000, "listingType": "nha_pho"}`;
 
         try {
-            const response = await axios.post(
-                `${this.apiBase}/chat/completions`,
-                {
-                    model: this.model,
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: message },
-                    ],
-                    temperature: 0.5,
-                    max_tokens: 200,
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.apiKey}`,
-                        'Content-Type': 'application/json',
-                    },
-                    timeout: 30000,
-                }
-            );
-
-            const content = response.data.choices?.[0]?.message?.content || '{}';
-            try {
-                return JSON.parse(content);
-            } catch {
-                return {};
-            }
+            const content = await this._callGemini(systemPrompt, message, 200, 0.3) || '{}';
+            // Gemini đôi khi wrap trong ```json ... ``` — strip ra
+            const clean = content.replace(/```json|```/g, '').trim();
+            return JSON.parse(clean);
         } catch (error) {
             console.error('[ChatService] Parse filters error:', error.message);
             return {};
@@ -252,14 +229,25 @@ Trả về dưới dạng JSON hợp lệ, không có text thêm. Ví dụ:
             ? `\nCó sẵn ${listings.length} tin đăng hiện tại. Giá từ ${Math.min(...listings.map(l => l.price))} đến ${Math.max(...listings.map(l => l.price))} VND.`
             : '';
 
-        return `Bạn là một trợ lý bán bất động sản RealPrice.
-Bạn giúp người dùng:
-1. Tìm kiếm bất động sản theo giá, vị trí, diện tích
-2. Suggest những bất động sản phù hợp với nhu cầu
-3. Cung cấp thông tin về giá trung bình tại từng khu vực
-4. Trả lời các câu hỏi về quy trình mua bán
+        // 👇 Thêm persona vào đây
+        const persona = `
+Bạn là Mai — trợ lý tư vấn bất động sản của RealPrice.
+Tính cách: thân thiện, nói chuyện tự nhiên như chat thật, thỉnh thoảng dùng emoji nhẹ.
+Phong cách: ngắn gọn, đúng trọng tâm, không dài dòng.
+`;
 
-Luôn trả lời bằng tiếng Việt và tư duy hợp lý.${listingContext}`;
+
+        const domain = `
+Bạn giúp người dùng:
+1. Tìm bất động sản theo giá, vị trí, diện tích
+2. Gợi ý những BĐS phù hợp nhu cầu
+3. Cung cấp thông tin giá trung bình từng khu vực
+4. Trả lời câu hỏi về quy trình mua bán
+
+Luôn trả lời bằng tiếng Việt.${listingContext}
+`;
+
+        return persona + domain;
     }
 
     _normalizeMessage(message) {
