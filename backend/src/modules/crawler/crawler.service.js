@@ -424,32 +424,60 @@ async function ensureCrawledTable(db) {
 async function runCrawl(db) {
   await ensureCrawledTable(db);
 
-  const locations = config.locations;
   const summary = { nhatot: 0, batdongsan: 0, total: 0, inserted: 0, skipped: 0, synced: 0 };
 
-  for (const location of locations) {
-    console.info(`[Crawler] Crawling ${location.district}, ${location.province}`);
+  // ── Mode 1: Crawl tất cả tỉnh/thành phố (không giới hạn region) ──
+  if (config.crawlMode === 'all') {
+    console.info(`[Crawler] Mode: CRAWL ALL LOCATIONS (toàn bộ Việt Nam)`);
 
-    const [nhatotItems, bdsItems] = await Promise.all([
-      crawlNhatot(location),
-      crawlBatDongSan(location),
-    ]);
+    const nhatotItems = await crawlNhatot({
+      district: 'All Locations',
+      province: 'Vietnam',
+      // Không truyền regionV2/areaV2 → crawl toàn bộ
+    });
 
-    summary.nhatot += nhatotItems.length;
-    summary.batdongsan += bdsItems.length;
-    const allItems = [...nhatotItems, ...bdsItems];
-    summary.total += allItems.length;
+    summary.nhatot = nhatotItems.length;
+    summary.total = nhatotItems.length;
 
-    const { inserted, skipped } = await upsertCrawledListings(db, allItems);
-    summary.inserted += inserted;
-    summary.skipped += skipped;
+    const { inserted, skipped } = await upsertCrawledListings(db, nhatotItems);
+    summary.inserted = inserted;
+    summary.skipped = skipped;
 
     console.info(
-      `[Crawler] ${location.district}: nhatot=${nhatotItems.length}, ` +
-      `bds=${bdsItems.length}, inserted=${inserted}, skipped=${skipped}`
+      `[Crawler] All locations: nhatot=${nhatotItems.length}, ` +
+      `inserted=${inserted}, skipped=${skipped}`
     );
+  }
+  // ── Mode 2: Crawl các location cụ thể ──
+  else {
+    console.info(`[Crawler] Mode: CRAWL SPECIFIC LOCATIONS`);
 
-    await delay(config.requestDelayMs);
+    const locations = config.locations;
+
+    for (const location of locations) {
+      console.info(`[Crawler] Crawling ${location.district}, ${location.province}`);
+
+      const [nhatotItems, bdsItems] = await Promise.all([
+        crawlNhatot(location),
+        crawlBatDongSan(location),
+      ]);
+
+      summary.nhatot += nhatotItems.length;
+      summary.batdongsan += bdsItems.length;
+      const allItems = [...nhatotItems, ...bdsItems];
+      summary.total += allItems.length;
+
+      const { inserted, skipped } = await upsertCrawledListings(db, allItems);
+      summary.inserted += inserted;
+      summary.skipped += skipped;
+
+      console.info(
+        `[Crawler] ${location.district}: nhatot=${nhatotItems.length}, ` +
+        `bds=${bdsItems.length}, inserted=${inserted}, skipped=${skipped}`
+      );
+
+      await delay(config.requestDelayMs);
+    }
   }
 
   // ── Sau khi crawl xong, sync vào bảng listings ──
