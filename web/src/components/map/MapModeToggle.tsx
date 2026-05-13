@@ -41,7 +41,7 @@ const MODES: Array<{ value: MapMode; label: string; icon: React.ReactNode }> = [
   },
 ];
 
-export function MapModeToggle() {
+export function MapModeToggle({ compact = false }: { compact?: boolean }) {
   const { mapMode, setMapMode } = useMapStore();
 
   return (
@@ -51,14 +51,17 @@ export function MapModeToggle() {
           key={mode.value}
           onClick={() => setMapMode(mode.value)}
           className={clsx(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+            "flex items-center justify-center gap-1.5 rounded-lg font-medium transition-all",
+            compact ? "w-10 h-9 px-0 py-0 text-xs" : "px-3 py-1.5 text-sm",
             mapMode === mode.value
               ? "bg-primary text-white shadow-sm"
               : "text-gray-600 hover:bg-gray-100"
           )}
+          aria-label={mode.label}
+          title={mode.label}
         >
           {mode.icon}
-          <span>{mode.label}</span>
+          {!compact && <span>{mode.label}</span>}
         </button>
       ))}
     </div>

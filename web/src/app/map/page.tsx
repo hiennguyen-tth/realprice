@@ -38,7 +38,7 @@ export default function MapPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
+    <div className="flex flex-col h-[calc(100svh-56px)] md:h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
       {/* ── DESKTOP LAYOUT: map left, panel right ──────────────────── */}
       <div className="hidden lg:flex flex-1 overflow-hidden">
         {/* Map */}
@@ -131,12 +131,12 @@ export default function MapPage() {
       {/* ── MOBILE LAYOUT: map top, panel bottom ───────────────────── */}
       <div className="flex lg:hidden flex-col flex-1 overflow-hidden">
         {/* Map (top ~50%) */}
-        <div className="relative" style={{ height: "52%" }}>
-          <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between gap-2 pointer-events-none">
-            <div className="pointer-events-auto">
-              <MapModeToggle />
+        <div className="relative h-[45%] min-h-[320px]">
+          <div className="absolute top-2 left-2 right-2 z-20 flex items-start justify-between gap-2 pointer-events-none">
+            <div className="pointer-events-auto shrink-0">
+              <MapModeToggle compact />
             </div>
-            <div className="pointer-events-auto bg-white/95 rounded-xl shadow-card border border-border px-2 py-1.5">
+            <div className="pointer-events-auto min-w-0 max-w-[48vw] bg-white/95 rounded-xl shadow-card border border-border px-1.5 py-1.5">
               <FilterBar compact />
             </div>
           </div>
@@ -150,7 +150,7 @@ export default function MapPage() {
         </div>
 
         {/* Bottom panel */}
-        <div className="flex flex-col flex-1 bg-white overflow-hidden border-t-2 border-border rounded-t-2xl -mt-4 relative z-10 shadow-panel">
+        <div className="flex flex-col flex-1 min-h-0 bg-white overflow-hidden border-t border-border rounded-t-2xl -mt-3 relative z-10 shadow-panel pb-[env(safe-area-inset-bottom)]">
           {/* Handle bar */}
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 bg-gray-300 rounded-full" />
@@ -169,11 +169,11 @@ export default function MapPage() {
 
           {/* Categories */}
           <div className="border-b border-gray-100">
-            <CategoryScroll />
+            <CategoryScroll compact />
           </div>
 
           {/* Horizontal listing cards scroll */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto pb-2">
             <ListingsPanel
               markers={markers}
               selectedLandId={selectedLandId}

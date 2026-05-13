@@ -39,7 +39,7 @@ function MarkerCard({ marker, isSelected, onClick }: MarkerCardProps) {
     <article
       onClick={onClick}
       className={clsx(
-        "w-48 shrink-0 bg-white rounded-2xl overflow-hidden border cursor-pointer transition-all duration-200",
+        "w-40 sm:w-48 shrink-0 bg-white rounded-2xl overflow-hidden border cursor-pointer transition-all duration-200",
         isSelected
           ? "border-primary shadow-lg scale-[1.02]"
           : "border-border shadow-card hover:shadow-card-hover hover:border-primary/30"
@@ -48,11 +48,11 @@ function MarkerCard({ marker, isSelected, onClick }: MarkerCardProps) {
       {/* Thumbnail */}
       <div
         className={clsx(
-          "h-28 bg-gradient-to-br flex flex-col items-center justify-center relative",
+          "h-24 sm:h-28 bg-gradient-to-br flex flex-col items-center justify-center relative",
           getGradient(marker.district)
         )}
       >
-        <span className="text-white text-3xl">🏘️</span>
+        <span className="text-white text-2xl sm:text-3xl">🏘️</span>
         {/* Cheapest price badge */}
         <div className="absolute bottom-2 left-2 bg-white/95 text-primary font-bold text-xs px-2 py-1 rounded-full shadow-sm">
           {formatPrice(marker.pricePerM2)}
@@ -65,7 +65,7 @@ function MarkerCard({ marker, isSelected, onClick }: MarkerCardProps) {
       </div>
 
       {/* Info */}
-      <div className="p-3">
+      <div className="p-2.5 sm:p-3">
         <p className="text-xs font-semibold text-gray-900 line-clamp-2 leading-snug mb-1">
           {marker.address}
         </p>

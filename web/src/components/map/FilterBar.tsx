@@ -40,12 +40,15 @@ export function FilterBar({ compact = false }: { compact?: boolean }) {
   );
 
   return (
-    <div className={clsx("flex items-center gap-2 overflow-x-auto no-scrollbar", compact ? "py-0.5" : "py-1")}>
+    <div className={clsx("flex items-center gap-2 overflow-x-auto no-scrollbar", compact ? "max-w-full py-0" : "py-1")}>
       {/* Loại BDS */}
       <select
         value={listingType}
         onChange={(e) => setListingType(e.target.value as ListingType | "")}
-        className="shrink-0 px-3 py-1.5 text-sm border border-border rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+        className={clsx(
+          "shrink-0 border border-border rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer",
+          compact ? "max-w-[128px] px-2.5 py-1.5 text-sm" : "px-3 py-1.5 text-sm"
+        )}
       >
         {LISTING_TYPES.map((t) => (
           <option key={t.value} value={t.value}>
@@ -62,7 +65,10 @@ export function FilterBar({ compact = false }: { compact?: boolean }) {
           setMinPrice(range.min);
           setMaxPrice(range.max);
         }}
-        className="shrink-0 px-3 py-1.5 text-sm border border-border rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+        className={clsx(
+          "shrink-0 border border-border rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer",
+          compact ? "hidden" : "px-3 py-1.5 text-sm"
+        )}
       >
         {PRICE_RANGES.map((r, i) => (
           <option key={i} value={i}>
