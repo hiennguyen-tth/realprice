@@ -120,27 +120,23 @@ export default function HomePage() {
             backgroundSize: "48px 48px",
           }}
         />
-        {/* Accent glow */}
-        <div className="absolute top-0 right-0 w-2/3 h-full pointer-events-none">
-          <div className="absolute top-1/4 right-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-32 w-64 h-64 bg-primary/10 rounded-full blur-2xl" />
-        </div>
+        <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(255,90,31,0.22),transparent_42%,rgba(15,23,42,0.4))] pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-12 lg:pt-28 lg:pb-16">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-8 sm:pt-16 sm:pb-12 lg:pt-24 lg:pb-16">
           <div className="max-w-2xl">
             {/* Live badge */}
-            <div className="inline-flex items-center gap-2 bg-primary/15 border border-primary/25 text-orange-300 rounded-full px-4 py-1.5 text-xs font-semibold mb-6 shadow-sm">
+            <div className="inline-flex items-center gap-2 bg-primary/15 border border-primary/25 text-orange-300 rounded-full px-3 py-1.5 text-xs font-semibold mb-4 sm:mb-6 shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
               Dữ liệu cập nhật hàng ngày
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight mb-5">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight mb-4 sm:mb-5">
               So sánh giá{" "}
               <span className="text-primary">bất động sản</span>{" "}
               theo vị trí
             </h1>
 
-            <p className="text-lg text-gray-300 leading-relaxed mb-8 max-w-xl">
+            <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-5 sm:mb-8 max-w-xl">
               Heatmap giá, định giá ngân hàng, lịch sử biến động giá theo từng
               đường phố. Tìm bất động sản giá tốt nhất tại Việt Nam.
             </p>
@@ -158,14 +154,14 @@ export default function HomePage() {
                 <input
                   type="text"
                   name="q"
-                  placeholder="VD: Nguyễn Trãi Quận 1, chung cư Bình Thạnh..."
+                  placeholder="VD: Nguyễn Trãi Quận 1"
                   autoComplete="off"
-                  className="w-full pl-11 pr-4 py-3.5 text-gray-900 bg-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-lg placeholder-gray-400"
+                  className="w-full min-w-0 pl-11 pr-3 sm:pr-4 py-3.5 text-gray-900 bg-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-lg placeholder-gray-400"
                 />
               </div>
               <button
                 type="submit"
-                className="bg-primary hover:bg-primary-dark active:scale-95 text-white px-6 py-3.5 rounded-xl font-semibold text-sm transition-all shadow-lg whitespace-nowrap"
+                className="bg-primary hover:bg-primary-dark active:scale-95 text-white px-4 sm:px-6 py-3.5 rounded-xl font-semibold text-sm transition-all shadow-lg whitespace-nowrap"
               >
                 Tìm kiếm
               </button>
@@ -189,11 +185,11 @@ export default function HomePage() {
 
         {/* Stats bar */}
         <div className="relative border-t border-white/8 bg-black/25">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-5">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
               {STATS.map((s) => (
                 <div key={s.label}>
-                  <p className="text-2xl font-bold text-white">{s.value}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-white">{s.value}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
                 </div>
               ))}
@@ -203,18 +199,18 @@ export default function HomePage() {
       </section>
 
       {/* ── Map CTA ──────────────────────────────────────────────────── */}
-      <section className="bg-surface-secondary py-16" aria-label="Bản đồ giá">
+      <section className="bg-surface-secondary py-10 sm:py-16" aria-label="Bản đồ giá">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
               <span className="text-primary text-xs font-bold uppercase tracking-widest">
                 Bản đồ giá thực tế
               </span>
-              <h2 className="text-3xl font-bold text-gray-900 mt-2 mb-4 leading-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2 mb-3 sm:mb-4 leading-tight">
                 Xem giá theo bản đồ,<br />
                 không cần lướt hàng nghìn tin
               </h2>
-              <p className="text-gray-600 leading-relaxed mb-8">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-6 sm:mb-8">
                 Chế độ heatmap hiển thị mức giá theo màu sắc từng khu vực giúp
                 bạn nắm bắt tổng quan thị trường ngay lập tức. Chuyển sang chế
                 độ marker để xem chi tiết từng tuyến đường.
@@ -240,7 +236,7 @@ export default function HomePage() {
             </div>
 
             {/* Map preview */}
-            <div className="relative h-80 rounded-2xl overflow-hidden bg-gradient-to-br from-green-50 to-orange-50 shadow-card-hover border border-border">
+            <div className="relative h-60 sm:h-80 rounded-2xl overflow-hidden bg-gradient-to-br from-green-50 to-orange-50 shadow-card-hover border border-border">
               <div className="absolute inset-0 opacity-40"
                 style={{ background: "radial-gradient(ellipse at 30% 40%, #22c55e55 0%, transparent 60%), radial-gradient(ellipse at 70% 60%, #ef444455 0%, transparent 60%), radial-gradient(ellipse at 50% 50%, #eab30855 0%, transparent 50%)" }}
               />
@@ -274,11 +270,11 @@ export default function HomePage() {
       </section>
 
       {/* ── Features ─────────────────────────────────────────────────── */}
-      <section className="py-16 bg-white" aria-label="Tính năng">
+      <section className="py-10 sm:py-16 bg-white" aria-label="Tính năng">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8 sm:mb-12">
             <span className="text-primary text-xs font-bold uppercase tracking-widest">Tính năng</span>
-            <h2 className="text-3xl font-bold text-gray-900 mt-2 mb-3">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-2 mb-3">
               Mọi thứ bạn cần để quyết định đúng
             </h2>
             <p className="text-gray-500 max-w-xl mx-auto">
@@ -288,11 +284,11 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FEATURES.map((feat) => (
+            {FEATURES.map((feat, index) => (
               <Link
                 key={feat.title}
                 href={feat.href}
-                className="group p-6 rounded-2xl border border-border hover:border-primary/30 hover:shadow-card-hover bg-white transition-all duration-200"
+                className={`group p-5 sm:p-6 rounded-2xl border border-border hover:border-primary/30 hover:shadow-card-hover bg-white transition-all duration-200 ${index > 2 ? "hidden sm:block" : ""}`}
               >
                 <div className="w-11 h-11 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4 group-hover:bg-primary group-hover:text-white transition-all">
                   {feat.icon}

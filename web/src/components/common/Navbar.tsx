@@ -37,10 +37,10 @@ export function Navbar() {
         role="navigation"
         aria-label="Điều hướng chính"
       >
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className="flex items-center justify-between h-14 md:h-16 gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="RealPrice - Trang chủ">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm shadow-primary/30">
+            <div className="w-9 h-9 md:w-8 md:h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm shadow-primary/30">
               <span className="text-white font-black text-sm tracking-tight">RP</span>
             </div>
             <span className="text-xl font-bold text-gray-900 hidden xs:block">
@@ -186,7 +186,7 @@ export function Navbar() {
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              className="md:hidden p-2 -mr-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
               aria-label={mobileMenuOpen ? "Đóng menu" : "Mở menu"}
               aria-expanded={mobileMenuOpen}
             >
@@ -203,25 +203,27 @@ export function Navbar() {
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border py-3 space-y-1 animate-fade-in">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={clsx(
-                  "flex items-center px-4 py-2.5 rounded-lg text-sm font-medium",
-                  pathname === link.href
-                    ? "bg-primary/10 text-primary"
-                    : "text-gray-700 hover:bg-gray-100"
-                )}
-                aria-current={pathname === link.href ? "page" : undefined}
-              >
-                {link.label}
-              </Link>
-            ))}
+          <div className="md:hidden border-t border-border py-3 animate-fade-in">
+            <div className="grid grid-cols-2 gap-2">
+              {NAV_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={clsx(
+                    "flex items-center justify-center px-3 py-2.5 rounded-lg text-sm font-semibold",
+                    pathname === link.href
+                      ? "bg-primary/10 text-primary"
+                      : "text-gray-700 bg-gray-50 hover:bg-gray-100"
+                  )}
+                  aria-current={pathname === link.href ? "page" : undefined}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
 
-            <form onSubmit={handleSearch} className="px-4 pt-2 pb-1">
+            <form onSubmit={handleSearch} className="pt-3 pb-1">
               <input
                 type="search"
                 placeholder="Tìm đường, quận..."
@@ -232,7 +234,7 @@ export function Navbar() {
               />
             </form>
 
-            <div className="px-4 pt-1 space-y-2">
+            <div className="pt-2 space-y-2">
               <Link
                 href="/dang-tin"
                 className="flex items-center justify-center gap-1.5 bg-primary text-white px-4 py-2.5 rounded-lg text-sm font-semibold"

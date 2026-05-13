@@ -2,14 +2,39 @@ import Link from "next/link";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const exploreLinks = [
+    { href: "/map", label: "Bản đồ giá" },
+    { href: "/tim-kiem", label: "Tìm kiếm" },
+    { href: "/so-sanh", label: "So sánh giá" },
+    { href: "/dang-tin", label: "Đăng tin" },
+    { href: "/khu-vuc/quan-1", label: "Quận 1, TP.HCM" },
+    { href: "/khu-vuc/hoan-kiem", label: "Hoàn Kiếm, Hà Nội" },
+  ];
+  const supportLinks = [
+    { href: "/huong-dan", label: "Hướng dẫn" },
+    { href: "/hoi-dap", label: "Hỏi đáp" },
+    { href: "/lien-he", label: "Liên hệ" },
+    { href: "/lien-he#bao-loi", label: "Báo lỗi" },
+    { href: "/lien-he#doi-tac", label: "Đối tác" },
+  ];
+  const districts = [
+    "Quận 1",
+    "Quận 7",
+    "Bình Thạnh",
+    "Hoàn Kiếm",
+    "Đống Đa",
+    "Hải Châu",
+    "Sơn Trà",
+    "Ngũ Hành Sơn",
+  ];
 
   return (
     <footer className="bg-gray-900 text-gray-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 md:py-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-7 md:gap-8">
           {/* Brand */}
-          <div className="col-span-1 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
+          <div className="col-span-2 md:col-span-1">
+            <Link href="/" className="flex items-center gap-2 mb-3 md:mb-4">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">RP</span>
               </div>
@@ -18,8 +43,8 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed">
-              Nền tảng so sánh giá bất động sản hàng đầu Việt Nam. Dữ liệu
-              thực tế, minh bạch, cập nhật hàng ngày.
+              So sánh giá bất động sản theo vị trí. Dữ liệu thực tế, cập nhật
+              hàng ngày.
             </p>
             <div className="flex items-center gap-3 mt-4">
               <a
@@ -59,20 +84,13 @@ export function Footer() {
 
           {/* Links: Khám phá */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Khám phá</h3>
+            <h3 className="text-white font-semibold mb-3 md:mb-4">Khám phá</h3>
             <ul className="space-y-2 text-sm">
-              {[
-                { href: "/map", label: "Bản đồ giá" },
-                { href: "/tim-kiem", label: "Tìm kiếm" },
-                { href: "/so-sanh", label: "So sánh giá" },
-                { href: "/dang-tin", label: "Đăng tin" },
-                { href: "/khu-vuc/quan-1", label: "Quận 1, TP.HCM" },
-                { href: "/khu-vuc/hoan-kiem", label: "Hoàn Kiếm, Hà Nội" },
-              ].map((link) => (
+              {exploreLinks.map((link, index) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="hover:text-primary transition-colors"
+                    className={`hover:text-primary transition-colors ${index > 3 ? "hidden md:inline" : ""}`}
                   >
                     {link.label}
                   </Link>
@@ -83,15 +101,9 @@ export function Footer() {
 
           {/* Links: Hỗ trợ */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Hỗ trợ</h3>
+            <h3 className="text-white font-semibold mb-3 md:mb-4">Hỗ trợ</h3>
             <ul className="space-y-2 text-sm">
-              {[
-                { href: "/huong-dan", label: "Hướng dẫn sử dụng" },
-                { href: "/hoi-dap", label: "Câu hỏi thường gặp" },
-                { href: "/lien-he", label: "Liên hệ" },
-                { href: "/lien-he#bao-loi", label: "Báo cáo lỗi" },
-                { href: "/lien-he#doi-tac", label: "Đối tác" },
-              ].map((link) => (
+              {supportLinks.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
@@ -105,19 +117,10 @@ export function Footer() {
           </div>
 
           {/* Khu vực nổi bật */}
-          <div>
+          <div className="hidden md:block">
             <h3 className="text-white font-semibold mb-4">Khu vực nổi bật</h3>
             <ul className="space-y-2 text-sm">
-              {[
-                "Quận 1",
-                "Quận 7",
-                "Bình Thạnh",
-                "Hoàn Kiếm",
-                "Đống Đa",
-                "Hải Châu",
-                "Sơn Trà",
-                "Ngũ Hành Sơn",
-              ].map((district) => (
+              {districts.map((district) => (
                 <li key={district}>
                   <Link
                     href={`/khu-vuc/${encodeURIComponent(district.toLowerCase().replace(/\s+/g, "-"))}`}
@@ -132,9 +135,9 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
+        <div className="mt-7 md:mt-10 pt-5 md:pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs md:text-sm text-gray-500">
           <p>© {currentYear} RealPrice. Bảo lưu mọi quyền.</p>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
             <Link href="/dieu-khoan" className="hover:text-gray-300 transition-colors">
               Điều khoản sử dụng
             </Link>

@@ -18,11 +18,11 @@ const CATEGORIES: Array<{
   { value: "van_phong", label: "Văn phòng", icon: "🏬", color: "bg-red-100" },
 ];
 
-export function CategoryScroll() {
+export function CategoryScroll({ compact = false }: { compact?: boolean }) {
   const { listingType, setListingType } = useFilterStore();
 
   return (
-    <div className="flex items-center gap-3 overflow-x-auto no-scrollbar px-4 py-2">
+    <div className={clsx("flex items-center overflow-x-auto no-scrollbar", compact ? "gap-2 px-4 py-2" : "gap-3 px-4 py-2")}>
       {CATEGORIES.map((cat) => {
         const isActive = listingType === cat.value;
         return (
@@ -33,7 +33,8 @@ export function CategoryScroll() {
           >
             <div
               className={clsx(
-                "w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-all",
+                "rounded-full flex items-center justify-center transition-all",
+                compact ? "w-11 h-11 text-xl" : "w-14 h-14 text-2xl",
                 isActive
                   ? "ring-2 ring-primary ring-offset-2 scale-110"
                   : "hover:scale-105",
@@ -44,7 +45,8 @@ export function CategoryScroll() {
             </div>
             <span
               className={clsx(
-                "text-xs font-medium whitespace-nowrap",
+                "font-medium whitespace-nowrap",
+                compact ? "text-[11px]" : "text-xs",
                 isActive ? "text-primary" : "text-gray-600"
               )}
             >

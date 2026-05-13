@@ -98,7 +98,7 @@ export function ChatBot() {
             {/* Floating Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="fixed bottom-6 right-6 w-14 h-14 bg-primary hover:bg-primary-dark text-white rounded-full shadow-lg flex items-center justify-center z-40 transition-transform active:scale-95"
+                className="fixed bottom-5 right-4 md:bottom-6 md:right-6 w-12 h-12 md:w-14 md:h-14 bg-primary hover:bg-primary-dark text-white rounded-full shadow-lg flex items-center justify-center z-40 transition-transform active:scale-95"
                 aria-label="Open chatbot"
             >
                 {isOpen ? (
@@ -115,7 +115,7 @@ export function ChatBot() {
 
             {/* Chat Panel */}
             {isOpen && (
-                <div className="fixed bottom-24 right-6 w-96 h-96 bg-white rounded-2xl shadow-2xl border border-border flex flex-col z-40 animate-fade-in">
+                <div className="fixed bottom-20 right-4 left-4 md:left-auto md:bottom-24 md:right-6 md:w-96 h-[420px] max-h-[70svh] bg-white rounded-2xl shadow-2xl border border-border flex flex-col z-40 animate-fade-in">
                     {/* Header */}
                     <div className="bg-primary text-white px-4 py-4 rounded-t-2xl flex items-center justify-between">
                         <div>
