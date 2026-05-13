@@ -14,6 +14,8 @@ class ChatService {
         this.apiBase = 'https://generativelanguage.googleapis.com/v1beta/models';
         this.useMockMode = !this.apiKey;
 
+        console.log('[ChatService] Using model:', this.model);
+
         if (this.useMockMode) {
             console.warn('[ChatService] GEMINI_API_KEY not set — using mock mode for testing');
         }
