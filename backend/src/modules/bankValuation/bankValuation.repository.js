@@ -88,8 +88,10 @@ class BankValuationRepository extends BaseRepository {
   async compareForArea(district, ward, landType, areaM2) {
     const { rows } = await this._query(
       `SELECT *,
-              valuation_per_m2 * $4  AS total_valuation,
-              max_loan_per_m2  * $4  AS max_loan
+              valuation_price AS valuation_per_m2,
+              (valuation_price * (ltv_ratio / 100.0))::BIGINT AS max_loan_per_m2,
+              valuation_price * $4 AS total_valuation,
+              ((valuation_price * (ltv_ratio / 100.0))::BIGINT * $4) AS max_loan
        FROM bank_valuations
        WHERE district  = $1
          AND land_type = $2
