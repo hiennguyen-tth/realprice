@@ -38,12 +38,11 @@ interface CitySummary {
 
 export default async function KhuVucPage() {
   let districts: DistrictSummary[] = [];
-  let fetchError = false;
 
   try {
     districts = await getDistrictSummaries(30);
   } catch {
-    fetchError = true;
+    districts = [];
   }
 
   const groupedByProvince = districts.reduce((acc, item) => {

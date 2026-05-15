@@ -28,6 +28,10 @@ const ROWS = [
 ];
 
 export function ComparisonTable({ items, analysis }: ComparisonTableProps) {
+  const cheapestIndex = analysis.cheapestIndex ?? -1;
+  const bestValueIndex = analysis.bestValueIndex ?? -1;
+  const largestAreaIndex = analysis.largestAreaIndex ?? -1;
+
   return (
     <div className="overflow-x-auto">
       <div
@@ -42,8 +46,8 @@ export function ComparisonTable({ items, analysis }: ComparisonTableProps) {
             </span>
           </div>
           {items.map((item, idx) => {
-            const isBest = idx === analysis.bestValueIndex;
-            const isCheapest = idx === analysis.cheapestIndex;
+            const isBest = idx === bestValueIndex;
+            const isCheapest = idx === cheapestIndex;
             return (
               <div
                 key={item.listingId}
@@ -121,34 +125,34 @@ export function ComparisonTable({ items, analysis }: ComparisonTableProps) {
                   value = (
                     <span className={clsx(
                       "font-bold",
-                      idx === analysis.cheapestIndex ? "text-green-600" : "text-gray-900"
+                      idx === cheapestIndex ? "text-green-600" : "text-gray-900"
                     )}>
                       {formatShortPrice(listing.price)}
                     </span>
                   );
-                  highlight = idx === analysis.cheapestIndex;
+                  highlight = idx === cheapestIndex;
                   break;
                 case "area":
                   value = (
                     <span className={clsx(
                       "font-semibold",
-                      idx === analysis.largestAreaIndex ? "text-blue-600" : "text-gray-900"
+                      idx === largestAreaIndex ? "text-blue-600" : "text-gray-900"
                     )}>
                       {formatArea(listing.area)}
                     </span>
                   );
-                  highlight = idx === analysis.largestAreaIndex;
+                  highlight = idx === largestAreaIndex;
                   break;
                 case "pricePerM2":
                   value = (
                     <span className={clsx(
                       "font-bold",
-                      idx === analysis.bestValueIndex ? "text-primary" : "text-gray-900"
+                      idx === bestValueIndex ? "text-primary" : "text-gray-900"
                     )}>
                       {formatPricePerM2(listing.pricePerM2)}
                     </span>
                   );
-                  highlight = idx === analysis.bestValueIndex;
+                  highlight = idx === bestValueIndex;
                   break;
                 case "listingType":
                   value = <Badge variant="primary">{formatListingType(listing.listingType)}</Badge>;

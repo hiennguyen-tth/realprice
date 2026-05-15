@@ -1,14 +1,14 @@
 import Link from "next/link";
+import { getDistrictSummaries } from "@/lib/api";
 
-export function Footer() {
+export async function Footer() {
   const currentYear = new Date().getFullYear();
   const exploreLinks = [
     { href: "/map", label: "Bản đồ giá" },
     { href: "/tim-kiem", label: "Tìm kiếm" },
     { href: "/so-sanh", label: "So sánh giá" },
     { href: "/dang-tin", label: "Đăng tin" },
-    { href: "/khu-vuc/quan-1", label: "Quận 1, TP.HCM" },
-    { href: "/khu-vuc/hoan-kiem", label: "Hoàn Kiếm, Hà Nội" },
+    { href: "/khu-vuc", label: "Khu vực" },
   ];
   const supportLinks = [
     { href: "/huong-dan", label: "Hướng dẫn" },
@@ -17,16 +17,7 @@ export function Footer() {
     { href: "/lien-he#bao-loi", label: "Báo lỗi" },
     { href: "/lien-he#doi-tac", label: "Đối tác" },
   ];
-  const districts = [
-    "Quận 1",
-    "Quận 7",
-    "Bình Thạnh",
-    "Hoàn Kiếm",
-    "Đống Đa",
-    "Hải Châu",
-    "Sơn Trà",
-    "Ngũ Hành Sơn",
-  ];
+  const districts = await getDistrictSummaries(8).catch(() => []);
 
   return (
     <footer className="bg-gray-900 text-gray-300">
@@ -86,11 +77,11 @@ export function Footer() {
           <div>
             <h3 className="text-white font-semibold mb-3 md:mb-4">Khám phá</h3>
             <ul className="space-y-2 text-sm">
-              {exploreLinks.map((link, index) => (
+              {exploreLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className={`hover:text-primary transition-colors ${index > 3 ? "hidden md:inline" : ""}`}
+                    className="hover:text-primary transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -117,21 +108,30 @@ export function Footer() {
           </div>
 
           {/* Khu vực nổi bật */}
-          <div className="hidden md:block">
-            <h3 className="text-white font-semibold mb-4">Khu vực nổi bật</h3>
-            <ul className="space-y-2 text-sm">
-              {districts.map((district) => (
-                <li key={district}>
-                  <Link
-                    href={`/khu-vuc/${encodeURIComponent(district.toLowerCase().replace(/\s+/g, "-"))}`}
-                    className="hover:text-white transition-colors"
-                  >
-                    {district}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {districts.length > 0 ? (
+            <div className="hidden md:block">
+              <h3 className="text-white font-semibold mb-4">Khu vực nổi bật</h3>
+              <ul className="space-y-2 text-sm">
+                {districts.map((district) => (
+                  <li key={district.slug}>
+                    <Link
+                      href={`/khu-vuc/${district.slug}`}
+                      className="hover:text-white transition-colors"
+                    >
+                      {district.district}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className="hidden md:block">
+              <h3 className="text-white font-semibold mb-4">Khu vực</h3>
+              <Link href="/khu-vuc" className="text-sm hover:text-white transition-colors">
+                Xem khu vực có dữ liệu
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Bottom bar */}

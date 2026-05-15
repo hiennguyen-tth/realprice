@@ -189,7 +189,8 @@ class LandService {
   }
 
   async getDistrictSummaries(limit = 30) {
-    const districts = await this.landRepo.getDistrictSummaries(limit);
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 30, 1), 100);
+    const districts = await this.landRepo.getDistrictSummaries(safeLimit);
     return districts.map((d) => ({
       district: d.district,
       province: d.province || inferProvince(d.district),
