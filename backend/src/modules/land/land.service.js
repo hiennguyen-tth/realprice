@@ -3,40 +3,7 @@
 const { NotFoundError } = require('../../utils/errors');
 const { normalizeAddress, slugifyAddress } = require('../../utils/addressUtils');
 const { parseBbox } = require('../../utils/geoUtils');
-
-// Infer province from district name when DB province field is null
-const HN_DISTRICTS = ['hoàn kiếm', 'ba đình', 'đống đa', 'hai bà trưng', 'tây hồ', 'long biên', 'cầu giấy', 'thanh xuân', 'hoàng mai', 'hà đông', 'nam từ liêm', 'bắc từ liêm', 'gia lâm', 'đông anh', 'sóc sơn', 'thanh trì', 'mê linh', 'sơn tây'];
-const DN_DISTRICTS = ['hải châu', 'thanh khê', 'sơn trà', 'ngũ hành sơn', 'liên chiểu', 'cẩm lệ', 'hòa vang'];
-const CT_DISTRICTS = ['ninh kiều', 'bình thủy', 'cái răng', 'ô môn', 'thốt nốt', 'phong điền', 'cờ đỏ', 'vĩnh thạnh', 'thới lai'];
-const BD_DISTRICTS = ['thủ dầu một', 'dĩ an', 'thuận an', 'bến cát', 'tân uyên', 'bàu bàng', 'bắc tân uyên', 'dầu tiếng', 'phú giáo'];
-const DONG_NAI_DISTRICTS = ['biên hòa', 'long khánh', 'long thành', 'nhơn trạch', 'trảng bom', 'vĩnh cửu', 'thống nhất', 'cẩm mỹ', 'xuân lộc', 'định quán', 'tân phú'];
-const LONG_AN_DISTRICTS = ['đức hòa', 'bến lức', 'cần giuộc', 'cần đước', 'tân an', 'thủ thừa', 'tân trụ', 'châu thành', 'đức huệ'];
-
-function inferProvince(district) {
-  if (!district) {
-    return 'TP.HCM';
-  }
-  const d = district.toLowerCase().trim();
-  if (HN_DISTRICTS.some(n => d.includes(n))) {
-    return 'Hà Nội';
-  }
-  if (DN_DISTRICTS.some(n => d.includes(n))) {
-    return 'Đà Nẵng';
-  }
-  if (CT_DISTRICTS.some(n => d.includes(n))) {
-    return 'Cần Thơ';
-  }
-  if (BD_DISTRICTS.some(n => d.includes(n))) {
-    return 'Bình Dương';
-  }
-  if (DONG_NAI_DISTRICTS.some(n => d.includes(n))) {
-    return 'Đồng Nai';
-  }
-  if (LONG_AN_DISTRICTS.some(n => d.includes(n))) {
-    return 'Long An';
-  }
-  return 'TP.HCM';
-}
+const { normalizeProvince } = require('../../utils/provinceUtils');
 
 /**
  * LandService — business logic for land parcel management.
@@ -206,11 +173,12 @@ class LandService {
   }
 
   async getDistrictOverview(district) {
+    const actualDistrict = await this.landRepo.findDistrictBySlug(district) || district;
     const [overview, topStreets, change30, change90] = await Promise.all([
-      this.landRepo.getDistrictOverview(district),
-      this.landRepo.getTopStreetsByDistrict(district, 10),
-      this.landRepo.getDistrictPriceChange(district, 30),
-      this.landRepo.getDistrictPriceChange(district, 90),
+      this.landRepo.getDistrictOverview(actualDistrict, { resolved: true }),
+      this.landRepo.getTopStreetsByDistrict(actualDistrict, 10, { resolved: true }),
+      this.landRepo.getDistrictPriceChange(actualDistrict, 30, { resolved: true }),
+      this.landRepo.getDistrictPriceChange(actualDistrict, 90, { resolved: true }),
     ]);
 
     if (!overview) {
@@ -226,7 +194,7 @@ class LandService {
 
     return {
       district: overview.district,
-      city: overview.province || 'TP.HCM',
+      city: normalizeProvince(overview.district, overview.province),
       avgPricePerM2: Number(overview.avg_price_per_m2) || 0,
       medianPricePerM2: Number(overview.median_price_per_m2) || 0,
       q1PricePerM2: Number(overview.q1_price_per_m2) || 0,
@@ -253,7 +221,7 @@ class LandService {
     const districts = await this.landRepo.getDistrictSummaries(safeLimit);
     return districts.map((d) => ({
       district: d.district,
-      province: d.province || inferProvince(d.district),
+      province: normalizeProvince(d.district, d.province),
       slug: slugifyAddress(d.district || ''),
       avgPricePerM2: Number(d.avg_price_per_m2) || 0,
       minPricePerM2: Number(d.min_price_per_m2) || 0,

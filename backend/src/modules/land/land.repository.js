@@ -16,6 +16,10 @@ function stripAdminPrefix(value) {
   return String(value || '').trim().replace(ADMIN_PREFIX_RE, '').trim();
 }
 
+function cleanPattern(value) {
+  return String(value || '').replace(/%/g, '').replace(/_/g, '').trim();
+}
+
 class LandRepository extends BaseRepository {
   constructor(db) {
     super('lands', db);
@@ -283,9 +287,9 @@ class LandRepository extends BaseRepository {
     return rows;
   }
 
-  async getDistrictOverview(district) {
-    const actualDistrict = await this.findDistrictBySlug(district) || district;
-    const pattern = `%${actualDistrict.replace(/-/g, ' ').replace(/%/g, '')}%`;
+  async getDistrictOverview(district, options = {}) {
+    const actualDistrict = options.resolved ? district : await this.findDistrictBySlug(district) || district;
+    const pattern = `%${cleanPattern(actualDistrict).replace(/-/g, ' ')}%`;
     const { rows } = await this._query(
       `SELECT
          l.district,
@@ -307,9 +311,9 @@ class LandRepository extends BaseRepository {
     return rows[0] || null;
   }
 
-  async getTopStreetsByDistrict(district, limit = 10) {
-    const actualDistrict = await this.findDistrictBySlug(district) || district;
-    const pattern = `%${actualDistrict.replace(/-/g, ' ').replace(/%/g, '')}%`;
+  async getTopStreetsByDistrict(district, limit = 10, options = {}) {
+    const actualDistrict = options.resolved ? district : await this.findDistrictBySlug(district) || district;
+    const pattern = `%${cleanPattern(actualDistrict).replace(/-/g, ' ')}%`;
     const { rows } = await this._query(
       `SELECT
          l.address AS street,
@@ -326,9 +330,9 @@ class LandRepository extends BaseRepository {
     return rows;
   }
 
-  async getDistrictPriceChange(district, days = 30) {
-    const actualDistrict = await this.findDistrictBySlug(district) || district;
-    const pattern = `%${actualDistrict.replace(/-/g, ' ').replace(/%/g, '')}%`;
+  async getDistrictPriceChange(district, days = 30, options = {}) {
+    const actualDistrict = options.resolved ? district : await this.findDistrictBySlug(district) || district;
+    const pattern = `%${cleanPattern(actualDistrict).replace(/-/g, ' ')}%`;
     const { rows } = await this._query(
       `SELECT
          AVG(ph.price_per_m2) FILTER (WHERE ph.recorded_at >= NOW() - ($2 || ' days')::INTERVAL) AS recent_avg,
@@ -345,8 +349,10 @@ class LandRepository extends BaseRepository {
 
   async findByDistrictAndAddress(districtSlug, streetSlug) {
     const actualDistrict = await this.findDistrictBySlug(districtSlug) || districtSlug;
-    const cleanDistrict = actualDistrict.replace(/-/g, ' ').replace(/%/g, '').replace(/_/g, '').trim();
-    const cleanStreet = streetSlug.replace(/-/g, ' ').replace(/%/g, '').replace(/_/g, '').trim();
+    const cleanDistrict = cleanPattern(actualDistrict).replace(/-/g, ' ');
+    const decodedStreet = decodeURIComponent(String(streetSlug || ''));
+    const cleanStreet = cleanPattern(decodedStreet).replace(/-/g, ' ');
+    const streetSlugValue = slugifyAddress(decodedStreet);
     const streetParts = cleanStreet
       .split(',')
       .map((part) => part.trim())
@@ -355,8 +361,46 @@ class LandRepository extends BaseRepository {
     const districtPattern = `%${cleanDistrict}%`;
     const addressPattern = `%${likelyStreet}%`;
     const fullAddressPattern = `%${cleanStreet}%`;
-    const slugPattern = `%${slugifyAddress(likelyStreet)}%`;
+    const slugPattern = `%${streetSlugValue || slugifyAddress(likelyStreet)}%`;
     const { rows } = await this._query(
+      `SELECT l.*,
+              ST_Y(l.location::geometry) AS lat_coord,
+              ST_X(l.location::geometry) AS lng_coord,
+              COUNT(li.id)::INTEGER AS total_listings,
+              MIN(li.price) AS min_price,
+              MAX(li.price) AS max_price,
+              ROUND(AVG(li.price))::BIGINT AS avg_price,
+              ROUND(AVG(li.price_per_m2))::BIGINT AS price_per_m2
+       FROM lands l
+       LEFT JOIN listings li ON li.land_id = l.id AND li.status = 'active' AND ${MARKET_PRICE_FILTER}
+       WHERE l.district ILIKE $1
+         AND (
+           l.slug = $4
+           OR l.slug ILIKE $5
+           OR l.address ILIKE $2
+           OR l.address ILIKE $3
+           OR l.ward ILIKE $2
+           OR l.ward ILIKE $3
+         )
+       GROUP BY l.id
+       ORDER BY
+         CASE
+           WHEN l.slug = $4 THEN 0
+           WHEN l.slug ILIKE $5 THEN 1
+           WHEN l.address ILIKE $3 THEN 2
+           ELSE 3
+         END,
+         COUNT(li.id) DESC,
+         l.created_at DESC
+       LIMIT 1`,
+      [districtPattern, addressPattern, fullAddressPattern, streetSlugValue, slugPattern]
+    );
+
+    if (rows[0]) {
+      return rows[0];
+    }
+
+    const { rows: fallbackRows } = await this._query(
       `SELECT l.*,
               ST_Y(l.location::geometry) AS lat_coord,
               ST_X(l.location::geometry) AS lng_coord,
@@ -372,14 +416,14 @@ class LandRepository extends BaseRepository {
            l.address ILIKE $2
            OR l.address ILIKE $3
            OR l.ward ILIKE $2
-           OR l.slug ILIKE $4
+           OR l.ward ILIKE $3
          )
        GROUP BY l.id
        ORDER BY COUNT(li.id) DESC, l.created_at DESC
        LIMIT 1`,
-      [districtPattern, addressPattern, fullAddressPattern, slugPattern]
+      [districtPattern, addressPattern, fullAddressPattern]
     );
-    return rows[0] || null;
+    return fallbackRows[0] || null;
   }
 }
 

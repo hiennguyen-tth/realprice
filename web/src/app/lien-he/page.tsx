@@ -1,12 +1,22 @@
 "use client";
 
-import type { Metadata } from "next";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
-export default function ContactPage() {
+const SUBJECTS = new Set(["general", "listing", "account", "partner", "bug", "other"]);
+
+function ContactContent() {
+  const searchParams = useSearchParams();
   const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "general", message: "" });
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const subject = searchParams.get("subject");
+    if (subject && SUBJECTS.has(subject)) {
+      setForm((current) => ({ ...current, subject }));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +52,7 @@ export default function ContactPage() {
               id: "doi-tac",
             },
             {
-              icon: "🐛",
+              icon: "⚠️",
               title: "Báo cáo lỗi",
               content: "bugs@realprice.vn",
               sub: "Lỗi kỹ thuật, tin đăng sai",
@@ -152,5 +162,13 @@ export default function ContactPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ContactPage() {
+  return (
+    <Suspense fallback={<div className="max-w-5xl mx-auto px-4 sm:px-6 py-12" />}>
+      <ContactContent />
+    </Suspense>
   );
 }

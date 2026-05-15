@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getDistrictSummaries } from "@/lib/api";
 import { formatPricePerM2 } from "@/lib/formatters";
+import { normalizeProvinceLabel } from "@/lib/provinces";
 
 export const metadata: Metadata = {
   title: "RealPrice — So sánh giá bất động sản theo vị trí tại Việt Nam",
@@ -327,7 +328,7 @@ export default async function HomePage() {
                     <p className="font-semibold text-gray-900 group-hover:text-primary transition-colors text-sm">
                       {d.district}
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5">{d.province}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{normalizeProvinceLabel(d.district, d.province)}</p>
                   </div>
                   <svg className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

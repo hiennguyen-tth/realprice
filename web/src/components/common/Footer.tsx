@@ -14,8 +14,8 @@ export async function Footer() {
     { href: "/huong-dan", label: "Hướng dẫn" },
     { href: "/hoi-dap", label: "Hỏi đáp" },
     { href: "/lien-he", label: "Liên hệ" },
-    { href: "/lien-he#bao-loi", label: "Báo lỗi" },
-    { href: "/lien-he#doi-tac", label: "Đối tác" },
+    { href: "/lien-he?subject=bug#bao-loi", label: "Báo lỗi" },
+    { href: "/lien-he?subject=partner#doi-tac", label: "Đối tác" },
   ];
   const districts = await getDistrictSummaries(8).catch(() => []);
 
