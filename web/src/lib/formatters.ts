@@ -122,6 +122,8 @@ export function formatPercent(value: number, digits = 1): string {
  */
 export function formatListingType(type: string): string {
   const map: Record<string, string> = {
+    sale: "Bán",
+    rent: "Cho thuê",
     dat_nen: "Đất nền",
     nha_pho: "Nhà phố",
     chung_cu: "Chung cư",
@@ -140,6 +142,8 @@ export function formatListingStatus(status: string): string {
     sold: "Đã bán",
     expired: "Hết hạn",
     pending: "Chờ duyệt",
+    pending_review: "Chờ duyệt",
+    hidden: "Đã ẩn",
   };
   return map[status] ?? status;
 }

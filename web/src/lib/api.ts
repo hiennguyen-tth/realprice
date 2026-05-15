@@ -109,7 +109,32 @@ function normalizeListing(row: any): Listing {
     land: row.land,
     createdAt: row.created_at ?? row.createdAt ?? "",
     updatedAt: row.updated_at ?? row.updatedAt ?? "",
+    sourceUrl: row.source_url ?? row.sourceUrl ?? null,
+    source: row.source ?? null,
   };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeLand(row: any): Land {
+  return {
+    ...row,
+    id: row.id,
+    address: row.address ?? row.street ?? "",
+    district: row.district ?? "",
+    city: row.city ?? row.province ?? "",
+    street: row.street ?? row.address ?? "",
+    minPrice: Number(row.min_price ?? row.minPrice ?? 0),
+    maxPrice: Number(row.max_price ?? row.maxPrice ?? 0),
+    avgPrice: Number(row.avg_price ?? row.avgPrice ?? 0),
+    pricePerM2: Number(row.price_per_m2 ?? row.pricePerM2 ?? row.avg_price_per_m2 ?? 0),
+    totalListings: Number(row.total_listings ?? row.totalListings ?? 0),
+    createdAt: row.created_at ?? row.createdAt ?? "",
+    updatedAt: row.updated_at ?? row.updatedAt ?? "",
+    location: {
+      longitude: Number(row.lng_coord ?? row.lng ?? row.location?.longitude ?? 0),
+      latitude: Number(row.lat_coord ?? row.lat ?? row.location?.latitude ?? 0),
+    },
+  } as Land;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -125,10 +150,11 @@ function bboxParam(bbox: BoundingBox): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getLandsByBbox(
-  bbox: BoundingBox
+  bbox?: BoundingBox | null,
+  limit = 200
 ): Promise<LandMarker[]> {
   const { data } = await apiClient.get<ApiResponse<LandMarker[]>>("/lands", {
-    params: { bbox: bboxParam(bbox) },
+    params: { bbox: bbox ? bboxParam(bbox) : undefined, limit },
   });
 
   return data.data.map((land) => {
@@ -153,22 +179,7 @@ export async function getLandsByBbox(
 
 export async function getLandById(id: string): Promise<Land> {
   const { data } = await apiClient.get<ApiResponse<Land>>(`/lands/${id}`);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const d = data.data as any;
-  return {
-    ...d,
-    minPrice: Number(d.min_price ?? d.minPrice ?? 0),
-    maxPrice: Number(d.max_price ?? d.maxPrice ?? 0),
-    avgPrice: Number(d.avg_price ?? d.avgPrice ?? 0),
-    pricePerM2: Number(d.price_per_m2 ?? d.pricePerM2 ?? 0),
-    totalListings: Number(d.total_listings ?? d.totalListings ?? 0),
-    slugDistrict: d.slug_district ?? d.slugDistrict ?? "",
-    slugStreet: d.slug_street ?? d.slugStreet ?? "",
-    location: {
-      longitude: Number(d.lng ?? d.location?.longitude ?? 0),
-      latitude: Number(d.lat ?? d.location?.latitude ?? 0),
-    },
-  } as Land;
+  return normalizeLand(data.data);
 }
 
 export async function getLandBySlug(
@@ -178,22 +189,33 @@ export async function getLandBySlug(
   const { data } = await apiClient.get<ApiResponse<Land>>(
     `/lands/slug/${encodeURIComponent(district)}/${encodeURIComponent(street)}`
   );
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const d = data.data as any;
-  return {
-    ...d,
-    location: {
-      longitude: Number(d.lng_coord ?? d.lng ?? d.location?.longitude ?? 0),
-      latitude: Number(d.lat_coord ?? d.lat ?? d.location?.latitude ?? 0),
-    },
-  } as Land;
+  return normalizeLand(data.data);
 }
 
 export async function getPriceHistory(landId: string): Promise<PriceHistory> {
   const { data } = await apiClient.get<ApiResponse<PriceHistory>>(
     `/lands/${landId}/price-history`
   );
-  return data.data;
+  const payload = data.data;
+  if (Array.isArray(payload)) {
+    const points = payload
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((row: any) => ({
+        date: row.recorded_at ?? row.date,
+        avgPrice: Number(row.avg_price ?? row.avgPrice ?? 0),
+        pricePerM2: Number(row.price_per_m2 ?? row.pricePerM2 ?? 0),
+        totalListings: Number(row.total_listings ?? row.totalListings ?? 0),
+      }))
+      .reverse();
+    return {
+      landId,
+      points,
+      changePercent30d: 0,
+      changePercent90d: 0,
+      changePercent180d: 0,
+    };
+  }
+  return payload;
 }
 
 export async function getBankValuationsForLand(

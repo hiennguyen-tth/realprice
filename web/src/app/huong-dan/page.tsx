@@ -79,7 +79,7 @@ export default function HuongDanPage() {
           >
             <div className="text-4xl mb-3">{guide.icon}</div>
             <h2 className="text-lg font-bold text-gray-900 mb-4">{guide.title}</h2>
-            <ol className="space-y-2 mb-5">
+            <ol className="space-y-2 mb-5 list-none">
               {guide.steps.map((step, i) => (
                 <li key={i} className="flex gap-3 text-sm text-gray-600">
                   <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">

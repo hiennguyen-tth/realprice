@@ -37,19 +37,19 @@ export function useLandMarkers(bbox: BoundingBox | null, zoom: number = 12) {
   }, [bbox, debouncedSetBbox]);
 
   const zoomLevel = getZoomLevel(zoom);
-  const cacheKey = debouncedBbox ? `${bboxToCacheKey(debouncedBbox)}:${zoomLevel}` : null;
+  const cacheKey = debouncedBbox
+    ? `${bboxToCacheKey(debouncedBbox)}:${zoomLevel}`
+    : `nationwide:${zoomLevel}`;
 
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ["landMarkers", cacheKey],
     queryFn: async () => {
-      if (!debouncedBbox) return [];
-
       // Check in-memory cache first
-      const cached = CACHE.get(cacheKey!);
+      const cached = CACHE.get(cacheKey);
       if (cached) return cached;
 
-      const markers = await getLandsByBbox(debouncedBbox);
-      CACHE.set(cacheKey!, markers);
+      const markers = await getLandsByBbox(debouncedBbox, debouncedBbox ? 200 : 120);
+      CACHE.set(cacheKey, markers);
 
       // Keep cache size reasonable
       if (CACHE.size > 50) {
@@ -59,7 +59,7 @@ export function useLandMarkers(bbox: BoundingBox | null, zoom: number = 12) {
 
       return markers;
     },
-    enabled: !!debouncedBbox,
+    enabled: true,
     staleTime: 2 * 60 * 1000, // 2 min
     gcTime: 5 * 60 * 1000,
     placeholderData: (prev) => prev,

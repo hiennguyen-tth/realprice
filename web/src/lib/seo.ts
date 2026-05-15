@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { Land, Listing, AreaPriceIndex } from "@/types";
-import { formatVND, formatShortPrice } from "./formatters";
+import { formatVND, formatShortPrice, formatPricePerM2 } from "./formatters";
+import { slugifyVietnamese } from "./slugs";
 
 const SITE_NAME = "RealPrice";
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://realprice.vn";
@@ -154,6 +155,36 @@ export function generateDistrictMetadata(
   };
 }
 
+export function generateListingMetadata(listing: Listing): Metadata {
+  const district = listing.district || listing.land?.district || "";
+  const title = `${listing.title} — ${formatShortPrice(listing.price)}${district ? ` tại ${district}` : ""}`;
+  const description = `${listing.title}. Diện tích ${listing.area} m², giá ${formatVND(listing.price)}, ${formatPricePerM2(listing.pricePerM2)}${listing.address ? `, ${listing.address}` : ""}. Xem chi tiết và liên hệ người bán trên RealPrice.`;
+  const image = listing.images[0] || `${SITE_URL}/placeholder-property.jpg`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `/listing/${listing.id}`,
+    },
+    openGraph: {
+      type: "article",
+      locale: "vi_VN",
+      url: `${SITE_URL}/listing/${listing.id}`,
+      siteName: SITE_NAME,
+      title,
+      description,
+      images: [{ url: image, width: 1200, height: 630, alt: listing.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // JSON-LD structured data
 // ─────────────────────────────────────────────────────────────────────────────
@@ -195,6 +226,54 @@ export function generateLandStructuredData(
           reviewCount: listings.length,
         }
         : undefined,
+  };
+}
+
+export function generateListingStructuredData(listing: Listing): object {
+  const district = listing.district || listing.land?.district || "";
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    name: listing.title,
+    description: listing.description || listing.title,
+    url: `${SITE_URL}/listing/${listing.id}`,
+    image: listing.images,
+    datePosted: listing.createdAt,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: listing.address,
+      addressLocality: district,
+      addressRegion: listing.province || listing.land?.city,
+      addressCountry: "VN",
+    },
+    geo: listing.location
+      ? {
+        "@type": "GeoCoordinates",
+        latitude: listing.location.latitude,
+        longitude: listing.location.longitude,
+      }
+      : undefined,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "VND",
+      price: listing.price,
+      availability: listing.status === "active" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      url: `${SITE_URL}/listing/${listing.id}`,
+    },
+    floorSize: {
+      "@type": "QuantitativeValue",
+      value: listing.area,
+      unitCode: "MTK",
+    },
+    category: listing.listingType,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${SITE_URL}/listing/${listing.id}`,
+    },
+    breadcrumb: district
+      ? `${SITE_URL}/khu-vuc/${slugifyVietnamese(district)}`
+      : undefined,
   };
 }
 

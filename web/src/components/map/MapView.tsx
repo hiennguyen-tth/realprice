@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import Map, {
   NavigationControl,
   GeolocateControl,
@@ -42,6 +42,15 @@ export function MapView({
   } = useMapStore();
 
   const [currentBbox, setCurrentBbox] = useState<BoundingBox | null>(null);
+  const [mapStatus, setMapStatus] = useState<"loading" | "ready" | "error">(
+    MAPBOX_TOKEN ? "loading" : "error"
+  );
+
+  useEffect(() => {
+    if (mapStatus !== "loading") return;
+    const timeout = window.setTimeout(() => setMapStatus("error"), 8000);
+    return () => window.clearTimeout(timeout);
+  }, [mapStatus]);
 
   // Derive bbox from map bounds
   const getCurrentBbox = useCallback((map?: any): BoundingBox | null => {
@@ -75,19 +84,50 @@ export function MapView({
 
   const handleLoad = useCallback((evt: any) => {
     setIsMapLoaded(true);
-    const bbox = getCurrentBbox(evt.target?.getMap?.());
+    setMapStatus("ready");
+    const bbox = getCurrentBbox(evt.target);
     if (bbox) {
       setCurrentBbox(bbox);
-      onBboxChange?.(bbox);
+      onBboxChange?.(bbox, viewport.zoom);
     }
-  }, [getCurrentBbox, onBboxChange, setIsMapLoaded]);
+  }, [getCurrentBbox, onBboxChange, setIsMapLoaded, viewport.zoom]);
 
   const { markers } = useLandMarkers(currentBbox, viewport.zoom);
   const { heatmapAreas } = useHeatmap(currentBbox, viewport.zoom, mapMode === "heatmap");
   const zoom = viewport.zoom;
 
   return (
-    <div className={className}>
+    <div className={`${className} relative`} aria-label="Bản đồ giá bất động sản">
+      {mapStatus === "error" && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/95 px-4">
+          <div className="max-w-sm text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 20l-5-2.5V5l5 2.5M9 20l6-3m-6 3V7.5m6 9.5l6 3V7.5L15 4m0 13V4m0 0L9 7.5" />
+              </svg>
+            </div>
+            <h2 className="text-base font-bold text-gray-900">Không tải được bản đồ</h2>
+            <p className="mt-2 text-sm text-gray-500">
+              Bạn vẫn có thể xem danh sách khu vực và tin nổi bật được lấy từ dữ liệu toàn quốc.
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+              >
+                Thử lại
+              </button>
+              <a
+                href="/tim-kiem"
+                className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Xem danh sách tin
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
       <Map
         ref={mapRef}
         mapboxAccessToken={MAPBOX_TOKEN}
@@ -100,6 +140,7 @@ export function MapView({
         mapStyle="mapbox://styles/mapbox/light-v11"
         onMove={handleMove}
         onLoad={handleLoad}
+        onError={() => setMapStatus("error")}
         interactive={interactive}
         attributionControl={false}
       >

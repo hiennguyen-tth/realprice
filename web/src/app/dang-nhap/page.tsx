@@ -138,7 +138,7 @@ export default function LoginPage() {
             </div>
 
             <div className="flex justify-end">
-              <Link href="/lien-he?subject=quen-mat-khau" className="text-xs text-primary hover:underline">
+              <Link href="/quen-mat-khau" className="text-xs text-primary hover:underline">
                 Quên mật khẩu?
               </Link>
             </div>
