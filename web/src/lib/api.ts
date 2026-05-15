@@ -154,6 +154,66 @@ function normalizeLand(row: any): Land {
   } as Land;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeUser(row: any): User {
+  const source = row ?? {};
+  return {
+    ...source,
+    id: source.id ?? "",
+    email: source.email ?? "",
+    name: source.name ?? source.full_name ?? "",
+    avatar: source.avatar ?? undefined,
+    phone: source.phone ?? undefined,
+    plan: source.plan ?? "free",
+    createdAt: source.created_at ?? source.createdAt ?? "",
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeBankValuation(row: any, marketPricePerM2 = 0): BankValuation {
+  const valuationPrice = Number(row.valuationPrice ?? row.valuation_price ?? 0);
+  const ltvRatio = Number(row.ltvRatio ?? row.ltv_ratio ?? 0);
+  const maxLoan = Number(row.maxLoan ?? row.max_loan ?? Math.round(valuationPrice * (ltvRatio / 100)));
+  const vsMarketPercent =
+    row.vsMarketPercent ?? row.vs_market_percent ??
+    (marketPricePerM2 > 0
+      ? Math.round(((valuationPrice - marketPricePerM2) / marketPricePerM2) * 1000) / 10
+      : 0);
+
+  return {
+    id: row.id,
+    landId: row.land_id ?? row.landId ?? "",
+    bankName: row.bank_name ?? row.bankName ?? "",
+    bankCode: row.bank_code ?? row.bankCode ?? "",
+    valuationPrice,
+    ltvRatio,
+    maxLoan,
+    interestRate: row.interest_rate ?? row.interestRate,
+    valuationDate: row.valuation_date ?? row.effective_from ?? row.valuationDate ?? "",
+    notes: row.notes,
+    vsMarketPercent: Number(vsMarketPercent) || 0,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeBankValuationSummary(payload: any, marketPricePerM2 = 0): BankValuationSummary {
+  const banks: BankValuation[] = Array.isArray(payload)
+    ? payload.map((row) => normalizeBankValuation(row, marketPricePerM2))
+    : (payload?.banks ?? []).map((row: any) => normalizeBankValuation(row, marketPricePerM2));
+
+  const avgValuation =
+    Number(payload?.avgValuation ?? payload?.avg_valuation) ||
+    (banks.length ? Math.round(banks.reduce((sum, bank) => sum + bank.valuationPrice, 0) / banks.length) : 0);
+  const maxLoan =
+    Number(payload?.maxLoan ?? payload?.max_loan) ||
+    (banks.length ? Math.max(...banks.map((bank) => bank.maxLoan)) : 0);
+  const highestLTV =
+    Number(payload?.highestLTV ?? payload?.highest_ltv) ||
+    (banks.length ? Math.max(...banks.map((bank) => bank.ltvRatio)) : 0);
+
+  return { avgValuation, maxLoan, highestLTV, banks };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: build bbox query string
 // ─────────────────────────────────────────────────────────────────────────────
@@ -239,10 +299,13 @@ export async function getPriceHistory(landId: string): Promise<PriceHistory> {
 export async function getBankValuationsForLand(
   landId: string
 ): Promise<BankValuationSummary> {
-  const { data } = await apiClient.get<ApiResponse<BankValuationSummary>>(
-    `/lands/${landId}/bank-valuations`
-  );
-  return data.data;
+  const [land, response] = await Promise.all([
+    getLandById(landId).catch(() => null),
+    apiClient.get<ApiResponse<BankValuationSummary | BankValuation[]>>(
+      `/lands/${landId}/bank-valuations`
+    ),
+  ]);
+  return normalizeBankValuationSummary(response.data.data, land?.pricePerM2 ?? 0);
 }
 
 export async function getDistrictOverview(
@@ -546,7 +609,7 @@ export async function getBankValuations(
     "/bank-valuations",
     { params: { district } }
   );
-  return data.data ?? [];
+  return (data.data ?? []).map((row) => normalizeBankValuation(row));
 }
 
 export async function getBankValuationById(
@@ -567,9 +630,17 @@ export async function loginApi(
   password: string
 ): Promise<{ user: User; token: string }> {
   const { data } = await apiClient.post<
-    ApiResponse<{ user: User; token: string }>
+    ApiResponse<{ user: User; token?: string; accessToken?: string }> & {
+      user?: User;
+      token?: string;
+      accessToken?: string;
+    }
   >("/auth/login", { email, password });
-  return data.data;
+  const payload = data.data ?? data;
+  return {
+    user: normalizeUser(payload.user),
+    token: payload.token ?? payload.accessToken ?? "",
+  };
 }
 
 export async function registerApi(
@@ -578,9 +649,17 @@ export async function registerApi(
   password: string
 ): Promise<{ user: User; token: string }> {
   const { data } = await apiClient.post<
-    ApiResponse<{ user: User; token: string }>
+    ApiResponse<{ user: User; token?: string; accessToken?: string }> & {
+      user?: User;
+      token?: string;
+      accessToken?: string;
+    }
   >("/auth/register", { name, email, password });
-  return data.data;
+  const payload = data.data ?? data;
+  return {
+    user: normalizeUser(payload.user),
+    token: payload.token ?? payload.accessToken ?? "",
+  };
 }
 
 export async function getMe(): Promise<User> {

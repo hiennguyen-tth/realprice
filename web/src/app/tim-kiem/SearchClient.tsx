@@ -48,6 +48,15 @@ function SearchContent({ initialQuery: serverInitialQuery, initialResults }: Sea
     minArea, maxArea, setMinArea, setMaxArea,
     sortBy, setSortBy,
   } = useFilterStore();
+  const canUseInitialResults =
+    page === 1 &&
+    !listingType &&
+    minPrice === undefined &&
+    maxPrice === undefined &&
+    minArea === undefined &&
+    maxArea === undefined &&
+    sortBy === "newest" &&
+    initialQuery === serverInitialQuery;
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["search", initialQuery, listingType, minPrice, maxPrice, minArea, maxArea, sortBy, page],
@@ -58,7 +67,7 @@ function SearchContent({ initialQuery: serverInitialQuery, initialResults }: Sea
         page,
         PAGE_SIZE
       ),
-    initialData: initialQuery === serverInitialQuery ? initialResults ?? undefined : undefined,
+    initialData: canUseInitialResults ? initialResults ?? undefined : undefined,
     placeholderData: (prev) => prev,
   });
 
