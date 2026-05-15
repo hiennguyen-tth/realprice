@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getDistrictSummaries } from "@/lib/api";
 import { formatPricePerM2 } from "@/lib/formatters";
+import { normalizeProvinceLabel } from "@/lib/provinces";
 
 export const metadata: Metadata = {
   title: "Khu vực bất động sản",
@@ -46,7 +47,7 @@ export default async function KhuVucPage() {
   }
 
   const groupedByProvince = districts.reduce((acc, item) => {
-    const province = item.province || "TP.HCM";
+    const province = normalizeProvinceLabel(item.district, item.province);
     if (!acc[province]) acc[province] = [];
     acc[province].push(item);
     return acc;

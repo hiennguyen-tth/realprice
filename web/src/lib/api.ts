@@ -20,6 +20,7 @@ import type {
   ListingFilters,
   BoundingBox,
 } from "@/types";
+import { normalizeProvinceLabel } from "@/lib/provinces";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Axios instance
@@ -37,6 +38,22 @@ export const apiClient: AxiosInstance = axios.create({
     Accept: "application/json",
   },
 });
+
+async function getWithRetry<T>(url: string, attempts = 2): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const { data } = await apiClient.get<T>(url);
+      return data;
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+    }
+  }
+  throw lastError;
+}
 
 // JWT request interceptor
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -186,7 +203,7 @@ export async function getLandBySlug(
   district: string,
   street: string
 ): Promise<Land> {
-  const { data } = await apiClient.get<ApiResponse<Land>>(
+  const data = await getWithRetry<ApiResponse<Land>>(
     `/lands/slug/${encodeURIComponent(district)}/${encodeURIComponent(street)}`
   );
   return normalizeLand(data.data);
@@ -254,8 +271,8 @@ export async function getDistrictSummaries(
   }>>>(`/lands/districts`, { params: { limit } });
   return (data.data ?? [])
     .map((row) => ({
-      district: row.district,
-      province: row.province,
+    district: row.district,
+    province: normalizeProvinceLabel(row.district, row.province),
       slug: row.slug,
       avgPricePerM2: Number(row.avgPricePerM2 ?? row.avg_price_per_m2 ?? 0),
       minPricePerM2: Number(row.minPricePerM2 ?? row.min_price_per_m2 ?? 0),
@@ -307,9 +324,7 @@ export async function getListings(
 }
 
 export async function getListingById(id: string): Promise<Listing> {
-  const { data } = await apiClient.get<ApiResponse<Listing>>(
-    `/listings/${id}`
-  );
+  const data = await getWithRetry<ApiResponse<Listing>>(`/listings/${id}`);
   return normalizeListing(data.data);
 }
 

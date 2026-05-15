@@ -11,7 +11,7 @@ export default function PrivacyPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">Chính sách bảo mật</h1>
-      <p className="text-gray-400 text-sm mb-8">Cập nhật lần cuối: 01/01/2025</p>
+      <p className="text-gray-400 text-sm mb-8">Cập nhật lần cuối: 15/05/2026</p>
 
       <div className="space-y-6 text-gray-700 text-sm leading-relaxed">
         <section>
