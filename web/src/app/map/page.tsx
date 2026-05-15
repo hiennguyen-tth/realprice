@@ -26,7 +26,8 @@ export default function MapPage() {
   const { selectedLandId, setSelectedLandId } = useMapStore();
   const [currentBbox, setCurrentBbox] = useState<BoundingBox | null>(null);
   const [currentZoom, setCurrentZoom] = useState(12);
-  const { markers, isLoading } = useLandMarkers(currentBbox, currentZoom);
+  const { markers, isLoading, error } = useLandMarkers(currentBbox, currentZoom);
+  const hasDataError = Boolean(error);
 
   const handleLandSelect = (marker: LandMarker) => {
     setSelectedLandId(marker.id);
@@ -43,6 +44,9 @@ export default function MapPage() {
       <div className="hidden lg:flex flex-1 overflow-hidden">
         {/* Map */}
         <div className="flex-1 relative">
+          <div className="absolute top-3 left-3 z-20 max-w-sm pointer-events-none">
+            <h1 className="sr-only">Bản đồ giá bất động sản Việt Nam</h1>
+          </div>
           {/* Map controls overlay */}
           <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between gap-3 pointer-events-none">
             <div className="pointer-events-auto">
@@ -76,23 +80,24 @@ export default function MapPage() {
                 <h2 className="text-sm font-bold text-gray-900">
                   {markers.length > 0
                     ? `${markers.length} vị trí trong khu vực`
-                    : currentBbox
+                    : hasDataError
+                      ? "Không tải được dữ liệu tin đăng"
+                      : currentBbox
                       ? "Không có tin đăng trong khu vực này"
                       : "Đang tải bản đồ..."}
                 </h2>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {markers.length > 0 ? "Sắp xếp theo giá thấp nhất" : "Di chuyển bản đồ hoặc dùng nút vị trí để tìm BDS gần bạn"}
+                  {markers.length > 0
+                    ? "Sắp xếp theo giá thấp nhất"
+                    : hasDataError
+                      ? "Kiểm tra API hoặc thử lại sau"
+                      : "Đang lấy dữ liệu BĐS nổi bật toàn quốc"}
                 </p>
               </div>
 
               {/* Categories */}
               <div className="border-b border-border py-1">
                 <CategoryScroll />
-              </div>
-
-              {/* Filter chips */}
-              <div className="px-4 py-2 border-b border-border">
-                <FilterBar />
               </div>
 
               {/* Listing cards — vertical scroll */}
@@ -103,9 +108,22 @@ export default function MapPage() {
                       <div key={i} className="h-32 bg-gray-100 rounded-2xl animate-pulse" />
                     ))}
                   </div>
+                ) : hasDataError ? (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-500 p-8 text-center">
+                    <svg className="w-10 h-10 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v4m0 4h.01M10.3 3.9 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                    </svg>
+                    <p className="text-sm font-semibold text-gray-700">Không tải được dữ liệu</p>
+                    <p className="mt-1 text-xs text-gray-400">Bạn có thể thử lại hoặc xem danh sách tin.</p>
+                    <a href="/tim-kiem" className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
+                      Xem danh sách tin
+                    </a>
+                  </div>
                 ) : markers.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
-                    <span className="text-4xl mb-3">🔍</span>
+                    <svg className="w-10 h-10 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5-2.5V5l5 2.5m0 12.5l6-3m-6 3V7.5m6 9.5l6 3V7.5L15 4m0 13V4m0 0L9 7.5" />
+                    </svg>
                     <p className="text-sm text-center">Di chuyển hoặc zoom bản đồ để xem bất động sản</p>
                   </div>
                 ) : (
@@ -132,6 +150,7 @@ export default function MapPage() {
       <div className="flex lg:hidden flex-col flex-1 overflow-hidden">
         {/* Map (top ~50%) */}
         <div className="relative h-[45%] min-h-[320px]">
+          <h1 className="sr-only">Bản đồ giá bất động sản Việt Nam</h1>
           <div className="absolute top-2 left-2 right-2 z-20 flex items-start justify-between gap-2 pointer-events-none">
             <div className="pointer-events-auto shrink-0">
               <MapModeToggle compact />
@@ -161,9 +180,11 @@ export default function MapPage() {
             <p className="text-xs font-semibold text-gray-700">
               {markers.length > 0
                 ? `${markers.length} vị trí · Giá thấp nhất trước`
-                : currentBbox
+                : hasDataError
+                  ? "Không tải được dữ liệu tin đăng"
+                  : currentBbox
                   ? "Không có tin đăng trong khu vực này — thử zoom ra hoặc di chuyển bản đồ"
-                  : "Đang tải..."}
+                  : "Đang lấy dữ liệu BĐS nổi bật toàn quốc..."}
             </p>
           </div>
 
@@ -179,6 +200,7 @@ export default function MapPage() {
               selectedLandId={selectedLandId}
               onMarkerSelect={handleLandSelect}
               isLoading={isLoading}
+              hasError={hasDataError}
             />
           </div>
 
@@ -240,9 +262,11 @@ function DesktopMarkerCard({
     >
       {/* Thumbnail */}
       <div
-        className={`w-20 h-20 shrink-0 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-2xl`}
+        className={`w-20 h-20 shrink-0 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white`}
       >
-        🏘️
+        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.7} d="M3 21h18M5 21V9.5L12 4l7 5.5V21M9 21v-6h6v6M8 11h.01M16 11h.01" />
+        </svg>
       </div>
 
       {/* Info */}

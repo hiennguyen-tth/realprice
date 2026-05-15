@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
-import Script from "next/script";
 import { getLandBySlug, getListings, getPriceHistory, getBankValuationsForLand, getNearbyLands } from "@/lib/api";
 import { generateLandMetadata, generateLandStructuredData, generateBreadcrumbStructuredData } from "@/lib/seo";
 import { LandPriceCard } from "@/components/land/LandPriceCard";
@@ -90,12 +89,12 @@ export default async function LandDetailPage({ params }: Props) {
 
   return (
     <>
-      <Script
+      <script
         id="land-jsonld"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(landJsonLd) }}
       />
-      <Script
+      <script
         id="breadcrumb-jsonld"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}

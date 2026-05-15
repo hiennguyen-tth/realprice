@@ -8,16 +8,35 @@ const { parseBbox } = require('../../utils/geoUtils');
 const HN_DISTRICTS = ['hoàn kiếm', 'ba đình', 'đống đa', 'hai bà trưng', 'tây hồ', 'long biên', 'cầu giấy', 'thanh xuân', 'hoàng mai', 'hà đông', 'nam từ liêm', 'bắc từ liêm', 'gia lâm', 'đông anh', 'sóc sơn', 'thanh trì', 'mê linh', 'sơn tây'];
 const DN_DISTRICTS = ['hải châu', 'thanh khê', 'sơn trà', 'ngũ hành sơn', 'liên chiểu', 'cẩm lệ', 'hòa vang'];
 const CT_DISTRICTS = ['ninh kiều', 'bình thủy', 'cái răng', 'ô môn', 'thốt nốt', 'phong điền', 'cờ đỏ', 'vĩnh thạnh', 'thới lai'];
+const BD_DISTRICTS = ['thủ dầu một', 'dĩ an', 'thuận an', 'bến cát', 'tân uyên', 'bàu bàng', 'bắc tân uyên', 'dầu tiếng', 'phú giáo'];
+const DONG_NAI_DISTRICTS = ['biên hòa', 'long khánh', 'long thành', 'nhơn trạch', 'trảng bom', 'vĩnh cửu', 'thống nhất', 'cẩm mỹ', 'xuân lộc', 'định quán', 'tân phú'];
+const LONG_AN_DISTRICTS = ['đức hòa', 'bến lức', 'cần giuộc', 'cần đước', 'tân an', 'thủ thừa', 'tân trụ', 'châu thành', 'đức huệ'];
 
 function inferProvince(district) {
-  if (!district) return 'TP.HCM';
+  if (!district) {
+    return 'TP.HCM';
+  }
   const d = district.toLowerCase().trim();
-  if (HN_DISTRICTS.some(n => d.includes(n))) return 'Hà Nội';
-  if (DN_DISTRICTS.some(n => d.includes(n))) return 'Đà Nẵng';
-  if (CT_DISTRICTS.some(n => d.includes(n))) return 'Cần Thơ';
+  if (HN_DISTRICTS.some(n => d.includes(n))) {
+    return 'Hà Nội';
+  }
+  if (DN_DISTRICTS.some(n => d.includes(n))) {
+    return 'Đà Nẵng';
+  }
+  if (CT_DISTRICTS.some(n => d.includes(n))) {
+    return 'Cần Thơ';
+  }
+  if (BD_DISTRICTS.some(n => d.includes(n))) {
+    return 'Bình Dương';
+  }
+  if (DONG_NAI_DISTRICTS.some(n => d.includes(n))) {
+    return 'Đồng Nai';
+  }
+  if (LONG_AN_DISTRICTS.some(n => d.includes(n))) {
+    return 'Long An';
+  }
   return 'TP.HCM';
 }
-const { parsePagination, buildPagination } = require('../../utils/formatUtils');
 
 /**
  * LandService — business logic for land parcel management.
@@ -41,14 +60,18 @@ class LandService {
    * @returns {Promise<object[]>}
    */
   async getLandsInBbox(query) {
-    const bbox = parseBbox(query.bbox);
-    if (!bbox) {
-      return [];
-    }
-
     const minPrice = query.minPrice ? parseInt(query.minPrice, 10) : null;
     const maxPrice = query.maxPrice ? parseInt(query.maxPrice, 10) : null;
     const limit = Math.min(parseInt(query.limit, 10) || 200, 500);
+    const bbox = parseBbox(query.bbox);
+
+    if (!bbox) {
+      return this.landRepo.getNationwideMarkers({
+        minPrice,
+        maxPrice,
+        limit,
+      });
+    }
 
     return this.landRepo.getBbox({
       ...bbox,
@@ -65,7 +88,9 @@ class LandService {
    */
   async getLandById(id) {
     const land = await this.landRepo.findByIdWithPrices(id);
-    if (!land) throw new NotFoundError('Land');
+    if (!land) {
+      throw new NotFoundError('Land');
+    }
     return land;
   }
 
@@ -76,7 +101,37 @@ class LandService {
    */
   async getPriceHistory(landId) {
     await this.landRepo.findByIdOrFail(landId, 'Land');
-    return this.landRepo.getPriceHistory(landId);
+    const rows = await this.landRepo.getPriceHistory(landId);
+    const points = rows
+      .slice()
+      .reverse()
+      .map((row) => ({
+        date: row.recorded_at,
+        avgPrice: Number(row.avg_price) || 0,
+        pricePerM2: Number(row.price_per_m2) || 0,
+        totalListings: Number(row.total_listings) || 0,
+      }));
+
+    const calcChange = (days) => {
+      if (points.length < 2) {
+        return 0;
+      }
+      const latest = points[points.length - 1];
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      const previous = [...points].reverse().find((point) => new Date(point.date).getTime() <= cutoff) || points[0];
+      if (!previous.pricePerM2) {
+        return 0;
+      }
+      return Math.round(((latest.pricePerM2 - previous.pricePerM2) / previous.pricePerM2) * 1000) / 10;
+    };
+
+    return {
+      landId,
+      points,
+      changePercent30d: calcChange(30),
+      changePercent90d: calcChange(90),
+      changePercent180d: calcChange(180),
+    };
   }
 
   /**
@@ -113,7 +168,7 @@ class LandService {
     const { lat, lng, address } = data;
 
     // Step 1: GPS proximity
-    if (lat != null && lng != null) {
+    if (lat !== null && lat !== undefined && lng !== null && lng !== undefined) {
       const byGps = await this.landRepo.findByGpsProximity(lat, lng);
       if (byGps) {
         return { land: byGps, created: false };
@@ -163,7 +218,9 @@ class LandService {
     }
 
     const calcChange = (recent, prev) => {
-      if (!prev || prev == 0) return 0;
+      if (!prev || prev === 0) {
+        return 0;
+      }
       return Math.round(((recent - prev) / prev) * 1000) / 10;
     };
 
@@ -171,6 +228,9 @@ class LandService {
       district: overview.district,
       city: overview.province || 'TP.HCM',
       avgPricePerM2: Number(overview.avg_price_per_m2) || 0,
+      medianPricePerM2: Number(overview.median_price_per_m2) || 0,
+      q1PricePerM2: Number(overview.q1_price_per_m2) || 0,
+      q3PricePerM2: Number(overview.q3_price_per_m2) || 0,
       minPricePerM2: Number(overview.min_price_per_m2) || 0,
       maxPricePerM2: Number(overview.max_price_per_m2) || 0,
       totalListings: Number(overview.total_listings) || 0,

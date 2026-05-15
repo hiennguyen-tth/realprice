@@ -3,6 +3,13 @@
 const BaseRepository = require('../shared/BaseRepository');
 const { slugifyAddress } = require('../../utils/addressUtils');
 
+const MARKET_PRICE_FILTER = `
+  li.price_per_m2 IS NOT NULL
+  AND li.price_per_m2 BETWEEN 1000000 AND 500000000
+  AND li.price BETWEEN 100000000 AND 1000000000000
+  AND (li.area IS NULL OR li.area BETWEEN 10 AND 10000)
+`;
+
 class LandRepository extends BaseRepository {
   constructor(db) {
     super('lands', db);
@@ -61,6 +68,7 @@ class LandRepository extends BaseRepository {
        LEFT JOIN listings li
          ON li.land_id = l.id
         AND li.status = 'active'
+        AND ${MARKET_PRICE_FILTER}
         AND ($5::BIGINT IS NULL OR li.price >= $5)
         AND ($6::BIGINT IS NULL OR li.price <= $6)
        WHERE ST_X(l.location::geometry) BETWEEN $1 AND $3
@@ -70,6 +78,45 @@ class LandRepository extends BaseRepository {
        ORDER BY has_boosted DESC, COUNT(li.id) DESC, min_price ASC
        LIMIT $7`,
       [minLng, minLat, maxLng, maxLat, minPrice || null, maxPrice || null, limit]
+    );
+    return rows;
+  }
+
+  async getNationwideMarkers({ minPrice, maxPrice, limit }) {
+    const { rows } = await this._query(
+      `SELECT l.id,
+              ST_Y(l.location::geometry) AS lat,
+              ST_X(l.location::geometry) AS lng,
+              l.address, l.district, l.ward, l.province,
+              COUNT(li.id)::INTEGER AS total_listings,
+              MIN(li.price)         AS min_price,
+              MAX(li.price)         AS max_price,
+              AVG(li.price)::BIGINT AS avg_price,
+              COALESCE(
+                MIN(li.price_per_m2),
+                CASE WHEN SUM(NULLIF(li.area, 0)) > 0
+                  THEN (SUM(li.price)::FLOAT / SUM(NULLIF(li.area, 0)))::BIGINT
+                  ELSE NULL
+                END
+              ) AS min_price_per_m2,
+              EXISTS(
+                SELECT 1 FROM listings lb
+                WHERE lb.land_id = l.id
+                  AND lb.boosted = true
+                  AND lb.boost_expires_at > NOW()
+              ) AS has_boosted
+       FROM lands l
+       JOIN listings li
+         ON li.land_id = l.id
+        AND li.status = 'active'
+        AND ${MARKET_PRICE_FILTER}
+        AND ($1::BIGINT IS NULL OR li.price >= $1)
+        AND ($2::BIGINT IS NULL OR li.price <= $2)
+       WHERE l.location IS NOT NULL
+       GROUP BY l.id
+       ORDER BY has_boosted DESC, COUNT(li.id) DESC, min_price ASC
+       LIMIT $3`,
+      [minPrice || null, maxPrice || null, limit]
     );
     return rows;
   }
@@ -101,7 +148,7 @@ class LandRepository extends BaseRepository {
 
   async getPriceHistory(landId, limit = 30) {
     const { rows } = await this._query(
-      `SELECT ph.recorded_at, ph.avg_price, ph.price_per_m2
+      `SELECT ph.recorded_at, ph.price AS avg_price, ph.price_per_m2
        FROM price_history ph
        WHERE ph.land_id = $1
        ORDER BY ph.recorded_at DESC
@@ -145,7 +192,7 @@ class LandRepository extends BaseRepository {
                 END
               ) AS price_per_m2
        FROM lands l
-       LEFT JOIN listings li ON li.land_id = l.id AND li.status = 'active'
+       LEFT JOIN listings li ON li.land_id = l.id AND li.status = 'active' AND ${MARKET_PRICE_FILTER}
        WHERE l.id = $1
        GROUP BY l.id`,
       [id]
@@ -207,7 +254,7 @@ class LandRepository extends BaseRepository {
          MIN(li.price_per_m2)::BIGINT AS min_price_per_m2,
          MAX(li.price_per_m2)::BIGINT AS max_price_per_m2
        FROM lands l
-       JOIN listings li ON li.land_id = l.id AND li.status = 'active'
+       JOIN listings li ON li.land_id = l.id AND li.status = 'active' AND ${MARKET_PRICE_FILTER}
        GROUP BY l.district, l.province
        ORDER BY total_listings DESC, avg_price_per_m2 DESC
        LIMIT $1`,
@@ -225,10 +272,13 @@ class LandRepository extends BaseRepository {
          l.province,
          COUNT(DISTINCT li.id)              AS total_listings,
          ROUND(AVG(li.price_per_m2))::BIGINT AS avg_price_per_m2,
+         ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY li.price_per_m2))::BIGINT AS median_price_per_m2,
+         ROUND(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY li.price_per_m2))::BIGINT AS q1_price_per_m2,
+         ROUND(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY li.price_per_m2))::BIGINT AS q3_price_per_m2,
          MIN(li.price_per_m2)               AS min_price_per_m2,
          MAX(li.price_per_m2)               AS max_price_per_m2
        FROM lands l
-       JOIN listings li ON li.land_id = l.id AND li.status = 'active'
+       JOIN listings li ON li.land_id = l.id AND li.status = 'active' AND ${MARKET_PRICE_FILTER}
        WHERE l.district ILIKE $1
        GROUP BY l.district, l.province
        LIMIT 1`,
@@ -246,7 +296,7 @@ class LandRepository extends BaseRepository {
          ROUND(AVG(li.price_per_m2))::BIGINT AS avg_price_per_m2,
          COUNT(li.id)                        AS total_listings
        FROM lands l
-       JOIN listings li ON li.land_id = l.id AND li.status = 'active'
+       JOIN listings li ON li.land_id = l.id AND li.status = 'active' AND ${MARKET_PRICE_FILTER}
        WHERE l.district ILIKE $1
        GROUP BY l.address
        ORDER BY avg_price_per_m2 DESC NULLS LAST
@@ -265,6 +315,7 @@ class LandRepository extends BaseRepository {
          AVG(ph.price_per_m2) FILTER (WHERE ph.recorded_at < NOW() - ($2 || ' days')::INTERVAL
            AND ph.recorded_at >= NOW() - ($3 || ' days')::INTERVAL) AS prev_avg
        FROM price_history ph
+       JOIN listings li ON li.id = ph.listing_id AND li.status = 'active' AND ${MARKET_PRICE_FILTER}
        JOIN lands l ON l.id = ph.land_id
        WHERE l.district ILIKE $1`,
       [pattern, days, days * 2]
@@ -274,23 +325,39 @@ class LandRepository extends BaseRepository {
 
   async findByDistrictAndAddress(districtSlug, streetSlug) {
     const actualDistrict = await this.findDistrictBySlug(districtSlug) || districtSlug;
-    const districtPattern = `%${actualDistrict.replace(/-/g, ' ').replace(/%/g, '').trim()}%`;
-    const addressPattern = `%${streetSlug.replace(/-/g, ' ').replace(/%/g, '').trim()}%`;
-    const slugPattern = `%${slugifyAddress(streetSlug)}%`;
+    const cleanDistrict = actualDistrict.replace(/-/g, ' ').replace(/%/g, '').replace(/_/g, '').trim();
+    const cleanStreet = streetSlug.replace(/-/g, ' ').replace(/%/g, '').replace(/_/g, '').trim();
+    const streetParts = cleanStreet
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const likelyStreet = streetParts.find((part) => !part.toLowerCase().includes(cleanDistrict.toLowerCase())) || streetParts[0] || cleanStreet;
+    const districtPattern = `%${cleanDistrict}%`;
+    const addressPattern = `%${likelyStreet}%`;
+    const fullAddressPattern = `%${cleanStreet}%`;
+    const slugPattern = `%${slugifyAddress(likelyStreet)}%`;
     const { rows } = await this._query(
       `SELECT l.*,
               ST_Y(l.location::geometry) AS lat_coord,
-              ST_X(l.location::geometry) AS lng_coord
+              ST_X(l.location::geometry) AS lng_coord,
+              COUNT(li.id)::INTEGER AS total_listings,
+              MIN(li.price) AS min_price,
+              MAX(li.price) AS max_price,
+              ROUND(AVG(li.price))::BIGINT AS avg_price,
+              ROUND(AVG(li.price_per_m2))::BIGINT AS price_per_m2
        FROM lands l
+       LEFT JOIN listings li ON li.land_id = l.id AND li.status = 'active' AND ${MARKET_PRICE_FILTER}
        WHERE l.district ILIKE $1
          AND (
            l.address ILIKE $2
+           OR l.address ILIKE $3
            OR l.ward ILIKE $2
-           OR l.slug ILIKE $3
+           OR l.slug ILIKE $4
          )
-       ORDER BY l.created_at DESC
+       GROUP BY l.id
+       ORDER BY COUNT(li.id) DESC, l.created_at DESC
        LIMIT 1`,
-      [districtPattern, addressPattern, slugPattern]
+      [districtPattern, addressPattern, fullAddressPattern, slugPattern]
     );
     return rows[0] || null;
   }

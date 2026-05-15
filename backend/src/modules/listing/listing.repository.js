@@ -68,7 +68,7 @@ class ListingRepository extends BaseRepository {
       conditions.push(`(
         li.title ILIKE $${idx}
         OR l.address ILIKE $${idx}
-        OR l.street ILIKE $${idx}
+        OR l.address ILIKE $${idx}
         OR l.district ILIKE $${idx}
         OR l.ward ILIKE $${idx}
       )`);
