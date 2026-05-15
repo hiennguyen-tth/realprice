@@ -1,6 +1,13 @@
 'use strict';
 
 const BaseRepository = require('../shared/BaseRepository');
+const { slugifyAddress } = require('../../utils/addressUtils');
+
+const ADMIN_PREFIX_RE = /^(quận|quan|huyện|huyen|thị xã|thi xa|thành phố|thanh pho|tp|tx|thị trấn|thi tran|phường|phuong|xã|xa)\s+/i;
+
+function stripAdminPrefix(value) {
+  return String(value || '').trim().replace(ADMIN_PREFIX_RE, '').trim();
+}
 
 /**
  * BankValuationRepository — data access for the bank_valuations table.
@@ -23,7 +30,10 @@ class BankValuationRepository extends BaseRepository {
    */
   async findForLand(district, ward, landType) {
     const { rows } = await this._query(
-      `SELECT * FROM bank_valuations
+      `SELECT *,
+              valuation_per_m2 AS valuation_price,
+              max_loan_per_m2 AS max_loan
+       FROM bank_valuations
        WHERE district = $1
          AND land_type = $2
          AND (effective_to IS NULL OR effective_to >= CURRENT_DATE)
@@ -31,7 +41,27 @@ class BankValuationRepository extends BaseRepository {
        ORDER BY ward DESC NULLS LAST, bank_name ASC`,
       [district, landType, ward || null]
     );
-    return rows;
+    if (rows.length > 0) {
+      return rows;
+    }
+
+    const targetDistrict = slugifyAddress(stripAdminPrefix(district || '').split(',')[0]);
+    const { rows: fallbackRows } = await this._query(
+      `SELECT *,
+              valuation_per_m2 AS valuation_price,
+              max_loan_per_m2 AS max_loan
+       FROM bank_valuations
+       WHERE land_type = $1
+         AND (effective_to IS NULL OR effective_to >= CURRENT_DATE)
+       ORDER BY ward DESC NULLS LAST, bank_name ASC`,
+      [landType]
+    );
+    return fallbackRows.filter((row) => {
+      const rowDistrict = slugifyAddress(stripAdminPrefix(row.district || ''));
+      return rowDistrict === targetDistrict ||
+        rowDistrict.includes(targetDistrict) ||
+        targetDistrict.includes(rowDistrict);
+    });
   }
 
   /**
@@ -64,7 +94,10 @@ class BankValuationRepository extends BaseRepository {
     const [countRes, dataRes] = await Promise.all([
       this._query(`SELECT COUNT(*) AS total FROM bank_valuations ${where}`, params),
       this._query(
-        `SELECT * FROM bank_valuations ${where}
+        `SELECT *,
+                valuation_per_m2 AS valuation_price,
+                max_loan_per_m2 AS max_loan
+         FROM bank_valuations ${where}
          ORDER BY district, ward NULLS LAST, bank_name
          LIMIT $${idx} OFFSET $${idx + 1}`,
         [...params, limit, offset]
@@ -88,10 +121,11 @@ class BankValuationRepository extends BaseRepository {
   async compareForArea(district, ward, landType, areaM2) {
     const { rows } = await this._query(
       `SELECT *,
-              valuation_price AS valuation_per_m2,
-              (valuation_price * (ltv_ratio / 100.0))::BIGINT AS max_loan_per_m2,
-              valuation_price * $4 AS total_valuation,
-              ((valuation_price * (ltv_ratio / 100.0))::BIGINT * $4) AS max_loan
+              valuation_per_m2 AS valuation_price,
+              max_loan_per_m2,
+              max_loan_per_m2 AS max_loan,
+              valuation_per_m2 * $4 AS total_valuation,
+              max_loan_per_m2 * $4 AS total_max_loan
        FROM bank_valuations
        WHERE district  = $1
          AND land_type = $2

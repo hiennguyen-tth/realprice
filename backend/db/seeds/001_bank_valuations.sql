@@ -42,6 +42,9 @@ VALUES
 
 -- Nha Be
 ('Nha Be',   'Phuong Phu Xuan', NULL,              'residential', 'Vietcombank',   35000000, 0.700, '2024-01-01', NULL),
+('Nha Be',   NULL,               NULL,             'residential', 'BIDV',          32000000, 0.700, '2024-01-01', NULL),
+('Nha Be',   NULL,               NULL,             'residential', 'Techcombank',   34000000, 0.750, '2024-01-01', NULL),
+('Nha Be',   NULL,               NULL,             'residential', 'VPBank',        30000000, 0.650, '2024-01-01', NULL),
 ('Nha Be',   NULL,               NULL,             'agricultural','BIDV',            12000000, 0.600, '2024-01-01', NULL),
 
 -- Can Gio
