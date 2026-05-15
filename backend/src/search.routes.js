@@ -28,7 +28,9 @@ router.get('/', cacheMiddleware(60), async (req, res, next) => {
     if (hasQuery && (!type || type === 'land')) {
       const { rows: lands, total } = await landRepo.search(queryText, limit, offset);
       results.lands = lands;
-      if (type === 'land') results.pagination = buildPagination(total, page, limit);
+      if (type === 'land') {
+        results.pagination = buildPagination(total, page, limit);
+      }
     }
 
     // ── Listing search ──────────────────────────────────────────────────────
@@ -56,29 +58,20 @@ router.get('/', cacheMiddleware(60), async (req, res, next) => {
 
       // listingType filter
       const normalizedListingType = String(listingType || '').trim().toLowerCase();
-      const propertyTypeMap = {
-        dat_nen: 'đất nền',
-        nha_pho: 'nhà phố',
-        chung_cu: 'chung cư',
-        biet_thu: 'biệt thự',
-        van_phong: 'văn phòng',
-      };
+      const propertyTypes = ['dat_nen', 'nha_pho', 'chung_cu', 'biet_thu', 'van_phong'];
 
       if (normalizedListingType) {
-        if (['sale', 'ban', 'rent', 'cho_thue', 'cho-thue'].includes(normalizedListingType)) {
+        if (propertyTypes.includes(normalizedListingType)) {
+          whereClause += ` AND li.listing_type = $${idx}`;
+          params.push(normalizedListingType);
+          idx += 1;
+        } else if (['sale', 'ban', 'rent', 'cho_thue', 'cho-thue'].includes(normalizedListingType)) {
           const mapped =
             normalizedListingType === 'ban' ? 'sale'
               : ['cho_thue', 'cho-thue'].includes(normalizedListingType) ? 'rent'
                 : normalizedListingType;
           whereClause += ` AND li.listing_type = $${idx}`;
           params.push(mapped);
-          idx += 1;
-        } else if (propertyTypeMap[normalizedListingType]) {
-          whereClause += ` AND (
-            li.title ILIKE $${idx}
-            OR li.description ILIKE $${idx}
-          )`;
-          params.push(`%${propertyTypeMap[normalizedListingType]}%`);
           idx += 1;
         }
       }

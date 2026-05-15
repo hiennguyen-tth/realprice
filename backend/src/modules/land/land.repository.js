@@ -103,7 +103,7 @@ class LandRepository extends BaseRepository {
     return fallbackRows[0]?.district || null;
   }
 
-  async getBbox({ minLng, minLat, maxLng, maxLat, minPrice, maxPrice, limit }) {
+  async getBbox({ minLng, minLat, maxLng, maxLat, minPrice, maxPrice, listingType, limit }) {
     const { rows } = await this._query(
       `SELECT l.id,
               ST_Y(l.location::geometry) AS lat,
@@ -133,18 +133,19 @@ class LandRepository extends BaseRepository {
         AND ${MARKET_PRICE_FILTER}
         AND ($5::BIGINT IS NULL OR li.price >= $5)
         AND ($6::BIGINT IS NULL OR li.price <= $6)
+        AND ($7::TEXT IS NULL OR li.listing_type = $7)
        WHERE ST_X(l.location::geometry) BETWEEN $1 AND $3
          AND ST_Y(l.location::geometry) BETWEEN $2 AND $4
        GROUP BY l.id
        HAVING COUNT(li.id) > 0
        ORDER BY has_boosted DESC, COUNT(li.id) DESC, min_price ASC
-       LIMIT $7`,
-      [minLng, minLat, maxLng, maxLat, minPrice || null, maxPrice || null, limit]
+       LIMIT $8`,
+      [minLng, minLat, maxLng, maxLat, minPrice || null, maxPrice || null, listingType || null, limit]
     );
     return rows;
   }
 
-  async getNationwideMarkers({ minPrice, maxPrice, limit }) {
+  async getNationwideMarkers({ minPrice, maxPrice, listingType, limit }) {
     const { rows } = await this._query(
       `SELECT l.id,
               ST_Y(l.location::geometry) AS lat,
@@ -174,11 +175,12 @@ class LandRepository extends BaseRepository {
         AND ${MARKET_PRICE_FILTER}
         AND ($1::BIGINT IS NULL OR li.price >= $1)
         AND ($2::BIGINT IS NULL OR li.price <= $2)
+        AND ($3::TEXT IS NULL OR li.listing_type = $3)
        WHERE l.location IS NOT NULL
        GROUP BY l.id
        ORDER BY has_boosted DESC, COUNT(li.id) DESC, min_price ASC
-       LIMIT $3`,
-      [minPrice || null, maxPrice || null, limit]
+       LIMIT $4`,
+      [minPrice || null, maxPrice || null, listingType || null, limit]
     );
     return rows;
   }
@@ -404,7 +406,12 @@ class LandRepository extends BaseRepository {
     const cleanDistrict = cleanPattern(actualDistrict).replace(/-/g, ' ');
     const decodedStreet = decodeURIComponent(String(streetSlug || ''));
     const cleanStreet = cleanPattern(decodedStreet).replace(/-/g, ' ');
+    const districtSlugValue = slugifyAddress(actualDistrict);
     const streetSlugValue = slugifyAddress(decodedStreet);
+    const streetLooksLikeDistrict =
+      streetSlugValue === districtSlugValue ||
+      streetSlugValue.includes(districtSlugValue) ||
+      districtSlugValue.includes(streetSlugValue);
     const streetParts = cleanStreet
       .split(',')
       .map((part) => part.trim())
@@ -450,6 +457,29 @@ class LandRepository extends BaseRepository {
 
     if (rows[0]) {
       return rows[0];
+    }
+
+    if (streetLooksLikeDistrict) {
+      const { rows: districtRows } = await this._query(
+        `SELECT l.*,
+                ST_Y(l.location::geometry) AS lat_coord,
+                ST_X(l.location::geometry) AS lng_coord,
+                COUNT(li.id)::INTEGER AS total_listings,
+                MIN(li.price) AS min_price,
+                MAX(li.price) AS max_price,
+                ROUND(AVG(li.price))::BIGINT AS avg_price,
+                ROUND(AVG(li.price_per_m2))::BIGINT AS price_per_m2
+         FROM lands l
+         LEFT JOIN listings li ON li.land_id = l.id AND li.status = 'active' AND ${MARKET_PRICE_FILTER}
+         WHERE l.district ILIKE $1
+         GROUP BY l.id
+         ORDER BY COUNT(li.id) DESC, l.updated_at DESC NULLS LAST, l.created_at DESC
+         LIMIT 1`,
+        [districtPattern]
+      );
+      if (districtRows[0]) {
+        return districtRows[0];
+      }
     }
 
     const { rows: fallbackRows } = await this._query(

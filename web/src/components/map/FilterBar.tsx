@@ -38,6 +38,7 @@ export function FilterBar({ compact = false }: { compact?: boolean }) {
   const currentPriceRange = PRICE_RANGES.findIndex(
     (r) => r.min === minPrice && r.max === maxPrice
   );
+  const selectedPriceRange = currentPriceRange >= 0 ? currentPriceRange : 0;
 
   return (
     <div className={clsx("flex items-center gap-2 overflow-x-auto no-scrollbar", compact ? "max-w-full py-0" : "py-1")}>
@@ -59,7 +60,7 @@ export function FilterBar({ compact = false }: { compact?: boolean }) {
 
       {/* Khoảng giá */}
       <select
-        value={currentPriceRange}
+        value={selectedPriceRange}
         onChange={(e) => {
           const range = PRICE_RANGES[Number(e.target.value)];
           setMinPrice(range.min);

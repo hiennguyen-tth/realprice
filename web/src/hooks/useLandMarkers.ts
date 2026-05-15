@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getLandsByBbox } from "@/lib/api";
 import { bboxToCacheKey } from "@/lib/geoUtils";
+import { useFilterStore } from "@/store/filterStore";
 import type { BoundingBox, LandMarker } from "@/types";
 import debounce from "lodash/debounce";
 
@@ -19,6 +20,9 @@ export function getZoomLevel(zoom: number): "province" | "district" | "ward" {
 
 export function useLandMarkers(bbox: BoundingBox | null, zoom: number = 12) {
   const [debouncedBbox, setDebouncedBbox] = useState<BoundingBox | null>(bbox);
+  const listingType = useFilterStore((state) => state.listingType);
+  const minPrice = useFilterStore((state) => state.minPrice);
+  const maxPrice = useFilterStore((state) => state.maxPrice);
 
   // Debounce bbox updates (triggered by map pan/zoom)
   const debouncedSetBbox = useRef(
@@ -37,9 +41,14 @@ export function useLandMarkers(bbox: BoundingBox | null, zoom: number = 12) {
   }, [bbox, debouncedSetBbox]);
 
   const zoomLevel = getZoomLevel(zoom);
+  const filterKey = [
+    listingType || "all",
+    minPrice ?? "none",
+    maxPrice ?? "none",
+  ].join(":");
   const cacheKey = debouncedBbox
-    ? `${bboxToCacheKey(debouncedBbox)}:${zoomLevel}`
-    : `nationwide:${zoomLevel}`;
+    ? `${bboxToCacheKey(debouncedBbox)}:${zoomLevel}:${filterKey}`
+    : `nationwide:${zoomLevel}:${filterKey}`;
 
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ["landMarkers", cacheKey],
@@ -48,7 +57,11 @@ export function useLandMarkers(bbox: BoundingBox | null, zoom: number = 12) {
       const cached = CACHE.get(cacheKey);
       if (cached) return cached;
 
-      const markers = await getLandsByBbox(debouncedBbox, debouncedBbox ? 200 : 120);
+      const markers = await getLandsByBbox(debouncedBbox, debouncedBbox ? 200 : 120, {
+        listingType: listingType || undefined,
+        minPrice,
+        maxPrice,
+      });
       CACHE.set(cacheKey, markers);
 
       // Keep cache size reasonable

@@ -29,6 +29,7 @@ class LandService {
   async getLandsInBbox(query) {
     const minPrice = query.minPrice ? parseInt(query.minPrice, 10) : null;
     const maxPrice = query.maxPrice ? parseInt(query.maxPrice, 10) : null;
+    const listingType = query.listingType || null;
     const limit = Math.min(parseInt(query.limit, 10) || 200, 500);
     const bbox = parseBbox(query.bbox);
 
@@ -36,6 +37,7 @@ class LandService {
       return this.landRepo.getNationwideMarkers({
         minPrice,
         maxPrice,
+        listingType,
         limit,
       });
     }
@@ -44,6 +46,7 @@ class LandService {
       ...bbox,
       minPrice,
       maxPrice,
+      listingType,
       limit,
     });
   }
