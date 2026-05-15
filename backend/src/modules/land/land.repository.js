@@ -10,6 +10,12 @@ const MARKET_PRICE_FILTER = `
   AND (li.area IS NULL OR li.area BETWEEN 10 AND 10000)
 `;
 
+const ADMIN_PREFIX_RE = /^(quận|quan|huyện|huyen|thị xã|thi xa|thành phố|thanh pho|tp|tx|thị trấn|thi tran|phường|phuong|xã|xa)\s+/i;
+
+function stripAdminPrefix(value) {
+  return String(value || '').trim().replace(ADMIN_PREFIX_RE, '').trim();
+}
+
 class LandRepository extends BaseRepository {
   constructor(db) {
     super('lands', db);
@@ -20,7 +26,9 @@ class LandRepository extends BaseRepository {
       return null;
     }
 
-    const normalizedSlug = districtSlug.trim();
+    const decoded = decodeURIComponent(String(districtSlug)).trim();
+    const normalizedSlug = slugifyAddress(decoded);
+    const normalizedWithoutPrefix = slugifyAddress(stripAdminPrefix(decoded));
     const { rows } = await this._query(
       `SELECT DISTINCT district
        FROM lands
@@ -28,14 +36,26 @@ class LandRepository extends BaseRepository {
     );
 
     for (const row of rows) {
-      if (slugifyAddress(row.district || '') === normalizedSlug) {
+      const district = row.district || '';
+      const districtSlugWithPrefix = slugifyAddress(district);
+      const districtSlugWithoutPrefix = slugifyAddress(stripAdminPrefix(district));
+
+      if (
+        districtSlugWithPrefix === normalizedSlug ||
+        districtSlugWithoutPrefix === normalizedSlug ||
+        districtSlugWithPrefix === normalizedWithoutPrefix ||
+        districtSlugWithoutPrefix === normalizedWithoutPrefix
+      ) {
         return row.district;
       }
     }
 
-    const fallback = districtSlug.replace(/-/g, ' ').trim();
+    const fallback = stripAdminPrefix(decoded).replace(/-/g, ' ').trim();
     const { rows: fallbackRows } = await this._query(
-      `SELECT district FROM lands WHERE district ILIKE $1 LIMIT 1`,
+      `SELECT district
+       FROM lands
+       WHERE district ILIKE $1
+       LIMIT 1`,
       [`%${fallback}%`]
     );
     return fallbackRows[0]?.district || null;
