@@ -10,12 +10,6 @@ const MARKET_PRICE_FILTER = `
   AND (li.area IS NULL OR li.area BETWEEN 10 AND 10000)
 `;
 
-const PRICE_HISTORY_FILTER = `
-  ph.price_per_m2 IS NOT NULL
-  AND ph.price_per_m2 BETWEEN 1000000 AND 500000000
-  AND ph.price BETWEEN 100000000 AND 1000000000000
-`;
-
 const ADMIN_PREFIX_RE = /^(quận|quan|huyện|huyen|thị xã|thi xa|thành phố|thanh pho|tp|tx|thị trấn|thi tran|phường|phuong|xã|xa)\s+/i;
 
 function stripAdminPrefix(value) {
@@ -29,6 +23,44 @@ function cleanPattern(value) {
 class LandRepository extends BaseRepository {
   constructor(db) {
     super('lands', db);
+    this.priceHistoryColumns = null;
+  }
+
+  async getPriceHistoryColumns() {
+    if (this.priceHistoryColumns) {
+      return this.priceHistoryColumns;
+    }
+
+    const { rows } = await this._query(
+      `SELECT column_name
+       FROM information_schema.columns
+       WHERE table_schema = current_schema()
+         AND table_name = 'price_history'`
+    );
+    this.priceHistoryColumns = new Set(rows.map((row) => row.column_name));
+    return this.priceHistoryColumns;
+  }
+
+  getPriceHistorySqlParts(columns) {
+    const priceExpr = columns.has('price')
+      ? 'ph.price'
+      : columns.has('avg_price')
+        ? 'ph.avg_price'
+        : 'NULL';
+    const totalListingsExpr = columns.has('total_listings') ? 'ph.total_listings' : '0';
+    const priceFilter = priceExpr === 'NULL'
+      ? 'TRUE'
+      : `${priceExpr} BETWEEN 100000000 AND 1000000000000`;
+
+    return {
+      priceExpr,
+      totalListingsExpr,
+      filter: `
+        ph.price_per_m2 IS NOT NULL
+        AND ph.price_per_m2 BETWEEN 1000000 AND 500000000
+        AND ${priceFilter}
+      `,
+    };
   }
 
   async findDistrictBySlug(districtSlug) {
@@ -177,8 +209,13 @@ class LandRepository extends BaseRepository {
   }
 
   async getPriceHistory(landId, limit = 30) {
+    const columns = await this.getPriceHistoryColumns();
+    const { priceExpr, totalListingsExpr } = this.getPriceHistorySqlParts(columns);
     const { rows } = await this._query(
-      `SELECT ph.recorded_at, ph.price AS avg_price, ph.price_per_m2
+      `SELECT ph.recorded_at,
+              ${priceExpr} AS avg_price,
+              ph.price_per_m2,
+              ${totalListingsExpr} AS total_listings
        FROM price_history ph
        WHERE ph.land_id = $1
        ORDER BY ph.recorded_at DESC
@@ -339,6 +376,8 @@ class LandRepository extends BaseRepository {
   async getDistrictPriceChange(district, days = 30, options = {}) {
     const actualDistrict = options.resolved ? district : await this.findDistrictBySlug(district) || district;
     const pattern = `%${cleanPattern(actualDistrict).replace(/-/g, ' ')}%`;
+    const columns = await this.getPriceHistoryColumns();
+    const { filter } = this.getPriceHistorySqlParts(columns);
     const { rows } = await this._query(
       `SELECT
          AVG(ph.price_per_m2) FILTER (WHERE ph.recorded_at >= NOW() - ($2 || ' days')::INTERVAL) AS recent_avg,
@@ -347,7 +386,7 @@ class LandRepository extends BaseRepository {
        FROM price_history ph
        JOIN lands l ON l.id = ph.land_id
        WHERE l.district ILIKE $1
-         AND ${PRICE_HISTORY_FILTER}
+         AND ${filter}
          AND EXISTS (
            SELECT 1
            FROM listings li
