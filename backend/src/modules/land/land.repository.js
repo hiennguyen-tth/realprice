@@ -10,6 +10,12 @@ const MARKET_PRICE_FILTER = `
   AND (li.area IS NULL OR li.area BETWEEN 10 AND 10000)
 `;
 
+const PRICE_HISTORY_FILTER = `
+  ph.price_per_m2 IS NOT NULL
+  AND ph.price_per_m2 BETWEEN 1000000 AND 500000000
+  AND ph.price BETWEEN 100000000 AND 1000000000000
+`;
+
 const ADMIN_PREFIX_RE = /^(quận|quan|huyện|huyen|thị xã|thi xa|thành phố|thanh pho|tp|tx|thị trấn|thi tran|phường|phuong|xã|xa)\s+/i;
 
 function stripAdminPrefix(value) {
@@ -339,9 +345,16 @@ class LandRepository extends BaseRepository {
          AVG(ph.price_per_m2) FILTER (WHERE ph.recorded_at < NOW() - ($2 || ' days')::INTERVAL
            AND ph.recorded_at >= NOW() - ($3 || ' days')::INTERVAL) AS prev_avg
        FROM price_history ph
-       JOIN listings li ON li.id = ph.listing_id AND li.status = 'active' AND ${MARKET_PRICE_FILTER}
        JOIN lands l ON l.id = ph.land_id
-       WHERE l.district ILIKE $1`,
+       WHERE l.district ILIKE $1
+         AND ${PRICE_HISTORY_FILTER}
+         AND EXISTS (
+           SELECT 1
+           FROM listings li
+           WHERE li.land_id = ph.land_id
+             AND li.status = 'active'
+             AND ${MARKET_PRICE_FILTER}
+         )`,
       [pattern, days, days * 2]
     );
     return rows[0] || null;
