@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getDistrictSummaries } from "@/lib/api";
+import { formatPricePerM2 } from "@/lib/formatters";
 
 export const metadata: Metadata = {
   title: "RealPrice — So sánh giá bất động sản theo vị trí tại Việt Nam",
@@ -88,17 +90,6 @@ const FEATURES = [
   },
 ];
 
-const DISTRICTS = [
-  { name: "Quận 1", city: "TP.HCM", priceLabel: "45–120 triệu/m²", slug: "quan-1" },
-  { name: "Quận 2", city: "TP.HCM", priceLabel: "30–80 triệu/m²", slug: "quan-2" },
-  { name: "Quận 7", city: "TP.HCM", priceLabel: "25–60 triệu/m²", slug: "quan-7" },
-  { name: "Bình Thạnh", city: "TP.HCM", priceLabel: "20–50 triệu/m²", slug: "binh-thanh" },
-  { name: "Hoàn Kiếm", city: "Hà Nội", priceLabel: "80–200 triệu/m²", slug: "hoan-kiem" },
-  { name: "Đống Đa", city: "Hà Nội", priceLabel: "40–120 triệu/m²", slug: "dong-da" },
-  { name: "Cầu Giấy", city: "Hà Nội", priceLabel: "30–80 triệu/m²", slug: "cau-giay" },
-  { name: "Hải Châu", city: "Đà Nẵng", priceLabel: "15–40 triệu/m²", slug: "hai-chau" },
-];
-
 const STATS = [
   { value: "120K+", label: "Tin đăng" },
   { value: "850+", label: "Tuyến đường" },
@@ -106,7 +97,9 @@ const STATS = [
   { value: "15", label: "Ngân hàng" },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const districts = await getDistrictSummaries(8).catch(() => []);
+
   return (
     <>
       {/* ── Hero ─────────────────────────────────────────────────────── */}
@@ -168,18 +161,20 @@ export default function HomePage() {
             </form>
 
             {/* Quick searches */}
-            <div className="flex items-center gap-2 mt-4 flex-wrap">
-              <span className="text-xs text-gray-500">Phổ biến:</span>
-              {["Quận 1", "Bình Thạnh", "Hoàn Kiếm", "Thủ Đức"].map((d) => (
-                <Link
-                  key={d}
-                  href={`/tim-kiem?q=${encodeURIComponent(d)}`}
-                  className="text-xs text-gray-400 hover:text-white bg-white/8 hover:bg-white/15 border border-white/10 px-3 py-1 rounded-full transition-colors"
-                >
-                  {d}
-                </Link>
-              ))}
-            </div>
+            {districts.length > 0 && (
+              <div className="flex items-center gap-2 mt-4 flex-wrap">
+                <span className="text-xs text-gray-500">Phổ biến:</span>
+                {districts.slice(0, 4).map((d) => (
+                  <Link
+                    key={d.slug}
+                    href={`/tim-kiem?q=${encodeURIComponent(d.district)}`}
+                    className="text-xs text-gray-400 hover:text-white bg-white/8 hover:bg-white/15 border border-white/10 px-3 py-1 rounded-full transition-colors"
+                  >
+                    {d.district}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -307,6 +302,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Districts ─────────────────────────────────────────────────── */}
+      {districts.length > 0 && (
       <section className="py-14 bg-surface-secondary" aria-label="Khu vực nổi bật">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-8">
@@ -320,7 +316,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {DISTRICTS.map((d) => (
+            {districts.map((d) => (
               <Link
                 key={d.slug}
                 href={`/khu-vuc/${d.slug}`}
@@ -329,20 +325,26 @@ export default function HomePage() {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="font-semibold text-gray-900 group-hover:text-primary transition-colors text-sm">
-                      {d.name}
+                      {d.district}
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5">{d.city}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{d.province}</p>
                   </div>
                   <svg className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
-                <p className="text-sm font-bold text-primary">{d.priceLabel}</p>
+                <p className="text-sm font-bold text-primary">
+                  {formatPricePerM2(d.minPricePerM2)}–{formatPricePerM2(d.maxPricePerM2)}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {d.totalListings.toLocaleString("vi-VN")} tin đăng
+                </p>
               </Link>
             ))}
           </div>
         </div>
       </section>
+      )}
 
       {/* ── How it works ──────────────────────────────────────────────── */}
       <section className="py-16 bg-white" aria-label="Cách hoạt động">

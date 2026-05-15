@@ -171,23 +171,26 @@ export interface ComparisonItem {
 export interface PriceComparison {
   id: string;
   items: ComparisonItem[];
-  analysis: ComparisonAnalysis;
+  analysis: ComparisonAnalysis | null;
   createdAt: string;
 }
 
 export interface ComparisonAnalysis {
-  cheapestListingId: string;
-  cheapestListing: { id: string; title: string; price: number } | null;
-  bestPerM2ListingId: string;
-  bestPerM2Listing: { id: string; title: string; price_per_m2: number } | null;
-  largestListingId: string | null;
-  largestListing: { id: string; title: string; area_m2: string } | null;
-  bestValueListingId: string;
-  priceRange: { min: number; max: number };
-  perM2Range: { min: number; max: number };
+  cheapestIndex?: number;
+  bestValueIndex?: number;
+  largestAreaIndex?: number;
+  cheapestListingId?: string;
+  cheapestListing?: { id: string; title: string; price: number } | null;
+  bestPerM2ListingId?: string;
+  bestPerM2Listing?: { id: string; title: string; price_per_m2: number } | null;
+  largestListingId?: string | null;
+  largestListing?: { id: string; title: string; area_m2: string | number } | null;
+  bestValueListingId?: string;
+  priceRange?: { min: number | null; max: number | null };
+  perM2Range?: { min: number | null; max: number | null };
   recommendation: string;
   summary?: string;
-  rankings: { listingId: string; score: number }[];
+  rankings?: { listingId: string; score: number }[];
 }
 
 export interface CreateComparisonPayload {

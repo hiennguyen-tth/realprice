@@ -87,16 +87,20 @@ export default function ComparisonEmptyPage() {
             ))}
           </div>
 
-          <Link
-            href="/map"
-            className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-semibold transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-            Khám phá bản đồ giá
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/tim-kiem"
+              className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-xl font-semibold transition-colors"
+            >
+              Tìm tin để so sánh
+            </Link>
+            <Link
+              href="/map"
+              className="inline-flex items-center justify-center gap-2 border-2 border-gray-200 hover:border-primary text-gray-700 hover:text-primary px-8 py-3 rounded-xl font-semibold transition-colors"
+            >
+              Mở bản đồ giá
+            </Link>
+          </div>
         </div>
       ) : (
         /* Has items */

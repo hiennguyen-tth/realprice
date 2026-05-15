@@ -51,7 +51,7 @@ function slugToDistrict(slug: string): string {
     "cau-giay": "Cầu Giấy", "thanh-xuan": "Thanh Xuân",
     "hoang-mai": "Hoàng Mai", "ha-dong": "Hà Đông",
     "nam-tu-liem": "Nam Từ Liêm", "bac-tu-liem": "Bắc Từ Liêm",
-    "tay-ho": "Tây Hồ", "gia-lam": "Gia Lâm",
+    "gia-lam": "Gia Lâm",
     "dong-anh": "Đông Anh", "soc-son": "Sóc Sơn",
     "thanh-tri": "Thanh Trì", "me-linh": "Mê Linh",
     // Đà Nẵng

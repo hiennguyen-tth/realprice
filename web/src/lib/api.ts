@@ -221,20 +221,26 @@ export async function getDistrictSummaries(
     district: string;
     province: string;
     slug: string;
-    avg_price_per_m2: number;
-    min_price_per_m2: number;
-    max_price_per_m2: number;
-    total_listings: number;
+    avg_price_per_m2?: number;
+    min_price_per_m2?: number;
+    max_price_per_m2?: number;
+    total_listings?: number;
+    avgPricePerM2?: number;
+    minPricePerM2?: number;
+    maxPricePerM2?: number;
+    totalListings?: number;
   }>>>(`/lands/districts`, { params: { limit } });
-  return (data.data ?? []).map((row) => ({
-    district: row.district,
-    province: row.province,
-    slug: row.slug,
-    avgPricePerM2: Number(row.avg_price_per_m2 ?? 0),
-    minPricePerM2: Number(row.min_price_per_m2 ?? 0),
-    maxPricePerM2: Number(row.max_price_per_m2 ?? 0),
-    totalListings: Number(row.total_listings ?? 0),
-  }));
+  return (data.data ?? [])
+    .map((row) => ({
+      district: row.district,
+      province: row.province,
+      slug: row.slug,
+      avgPricePerM2: Number(row.avgPricePerM2 ?? row.avg_price_per_m2 ?? 0),
+      minPricePerM2: Number(row.minPricePerM2 ?? row.min_price_per_m2 ?? 0),
+      maxPricePerM2: Number(row.maxPricePerM2 ?? row.max_price_per_m2 ?? 0),
+      totalListings: Number(row.totalListings ?? row.total_listings ?? 0),
+    }))
+    .filter((row) => row.district && row.slug && row.totalListings > 0);
 }
 
 export async function getNearbyLands(
@@ -391,14 +397,49 @@ export async function createComparison(
     "/comparison",
     payload
   );
-  return data.data;
+  return normalizeComparison(data.data);
 }
 
 export async function getComparison(id: string): Promise<PriceComparison> {
   const { data } = await apiClient.get<ApiResponse<PriceComparison>>(
     `/comparison/${id}`
   );
-  return data.data;
+  return normalizeComparison(data.data);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeComparison(raw: any): PriceComparison {
+  const items: PriceComparison["items"] = (raw.items ?? []).map((item: any) => {
+    const listing = normalizeListing(item.listing ?? item);
+    return {
+      ...item,
+      listingId: item.listingId ?? item.listing_id ?? listing.id,
+      listing,
+    };
+  });
+
+  const findIndexById = (id?: string | null) =>
+    id ? items.findIndex((item) => item.listing.id === id || item.listingId === id) : -1;
+
+  const analysis = raw.analysis
+    ? {
+      ...raw.analysis,
+      cheapestIndex:
+        raw.analysis.cheapestIndex ?? Math.max(0, findIndexById(raw.analysis.cheapestListingId)),
+      bestValueIndex:
+        raw.analysis.bestValueIndex ??
+        Math.max(0, findIndexById(raw.analysis.bestPerM2ListingId ?? raw.analysis.bestValueListingId)),
+      largestAreaIndex:
+        raw.analysis.largestAreaIndex ?? Math.max(0, findIndexById(raw.analysis.largestListingId)),
+    }
+    : null;
+
+  return {
+    ...raw,
+    items,
+    analysis,
+    createdAt: raw.createdAt ?? raw.created_at ?? "",
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

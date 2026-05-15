@@ -43,7 +43,7 @@ export default function ComparisonResultPage({ params }: Props) {
     );
   }
 
-  if (error || !comparison) {
+  if (error || !comparison || !comparison.analysis) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
         <p className="text-gray-500 mb-4">Không tìm thấy kết quả so sánh.</p>

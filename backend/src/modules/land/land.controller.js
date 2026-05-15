@@ -37,7 +37,7 @@ class LandController {
   /** GET /api/lands/districts */
   async getDistrictSummaries(req, res, next) {
     try {
-      const data = await this.landService.getDistrictSummaries();
+      const data = await this.landService.getDistrictSummaries(req.query.limit);
       res.json({ success: true, data });
     } catch (err) { next(err); }
   }
