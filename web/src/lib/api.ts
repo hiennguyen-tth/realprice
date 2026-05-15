@@ -168,10 +168,11 @@ function bboxParam(bbox: BoundingBox): string {
 
 export async function getLandsByBbox(
   bbox?: BoundingBox | null,
-  limit = 200
+  limit = 200,
+  filters: ListingFilters = {}
 ): Promise<LandMarker[]> {
   const { data } = await apiClient.get<ApiResponse<LandMarker[]>>("/lands", {
-    params: { bbox: bbox ? bboxParam(bbox) : undefined, limit },
+    params: { bbox: bbox ? bboxParam(bbox) : undefined, limit, ...filters },
   });
 
   return data.data.map((land) => {
