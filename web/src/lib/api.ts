@@ -171,9 +171,17 @@ function normalizeUser(row: any): User {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeBankValuation(row: any, marketPricePerM2 = 0): BankValuation {
-  const valuationPrice = Number(row.valuationPrice ?? row.valuation_price ?? 0);
-  const ltvRatio = Number(row.ltvRatio ?? row.ltv_ratio ?? 0);
-  const maxLoan = Number(row.maxLoan ?? row.max_loan ?? Math.round(valuationPrice * (ltvRatio / 100)));
+  const valuationPrice = Number(
+    row.valuationPrice ?? row.valuation_price ?? row.valuation_per_m2 ?? 0
+  );
+  const rawLtvRatio = Number(row.ltvRatio ?? row.ltv_ratio ?? 0);
+  const ltvRatio = rawLtvRatio > 0 && rawLtvRatio <= 1 ? rawLtvRatio * 100 : rawLtvRatio;
+  const maxLoan = Number(
+    row.maxLoan ??
+      row.max_loan ??
+      row.max_loan_per_m2 ??
+      Math.round(valuationPrice * (ltvRatio / 100))
+  );
   const vsMarketPercent =
     row.vsMarketPercent ?? row.vs_market_percent ??
     (marketPricePerM2 > 0
@@ -395,6 +403,17 @@ export async function getListingById(id: string): Promise<Listing> {
 export async function createListing(
   payload: CreateListingPayload
 ): Promise<Listing> {
+  const propertyType = (payload as any).propertyType ?? (payload as any).listingType;
+  const rawListingType = (payload as any).transactionType ?? (payload as any).listing_type;
+  const listingType = rawListingType === "rent" || rawListingType === "cho_thue" ? "rent" : "sale";
+  const landTypeByProperty: Record<string, string> = {
+    dat_nen: "residential",
+    nha_pho: "residential",
+    chung_cu: "residential",
+    biet_thu: "residential",
+    van_phong: "commercial",
+  };
+
   // Map camelCase → snake_case for the backend schema
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const body: Record<string, any> = {
@@ -403,7 +422,8 @@ export async function createListing(
     price: payload.price,
     area: payload.area,
     address: payload.address,
-    listing_type: (payload as any).listingType ?? (payload as any).listing_type ?? "sale",
+    listing_type: listingType,
+    land_type: landTypeByProperty[propertyType] ?? "residential",
     contact_name: (payload as any).contactName ?? (payload as any).contact_name,
     contact_phone: (payload as any).contactPhone ?? (payload as any).contact_phone,
     images: (payload as any).images ?? [],
